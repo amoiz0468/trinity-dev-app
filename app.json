@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Trinity Grocery",
+    "slug": "trinity-mobile-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trinity.groceryapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access to scan product barcodes.",
+        "NSPhotoLibraryUsageDescription": "This app needs photo library access to select product images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.trinity.groceryapp",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Trinity Grocery to access your camera to scan barcodes."
+        }
+      ]
+    ]
+  }
+}
