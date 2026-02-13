@@ -1,6 +1,14 @@
 // Logging utility for debugging and error tracking
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// Capture original console methods before they are overridden
+const originalConsole = {
+  log: console.log,
+  warn: console.warn,
+  error: console.error,
+  info: console.info,
+};
+
 type LogLevel = 'log' | 'warn' | 'error' | 'info';
 
 interface LogEntry {
@@ -33,12 +41,14 @@ class Logger {
       this.logs.shift();
     }
 
-    // Console output
+    // Console output via original methods to prevent infinite loops
     const prefix = `[${entry.timestamp}] ${level.toUpperCase()}:`;
+    const consoleMethod = originalConsole[level] || originalConsole.log;
+
     if (data) {
-      console[level as any](prefix, message, data);
+      consoleMethod.apply(console, [prefix, message, data]);
     } else {
-      console[level as any](prefix, message);
+      consoleMethod.apply(console, [prefix, message]);
     }
   }
 

@@ -68,8 +68,15 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: LAYOUT.borderRadius,
+    borderRadius: 16, // More modern rounded corners
     flexDirection: 'row',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   // Variants
   primary: {
@@ -90,17 +97,17 @@ const styles = StyleSheet.create({
   small: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
-    minHeight: 36,
+    minHeight: 40,
   },
   medium: {
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
-    minHeight: 44,
+    minHeight: 52,
   },
   large: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
-    minHeight: 52,
+    minHeight: 64,
   },
   fullWidth: {
     width: '100%',
@@ -111,15 +118,16 @@ const styles = StyleSheet.create({
   },
   // Text styles
   text: {
-    fontWeight: '600',
+    fontWeight: '700', // Bolder text
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   primaryText: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   secondaryText: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   outlineText: {
@@ -127,7 +135,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   dangerText: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   smallText: {

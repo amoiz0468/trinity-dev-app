@@ -11,20 +11,23 @@ export const PAYPAL_CONFIG = {
   ENVIRONMENT: 'sandbox', // Change to 'production' for live
 };
 
-// App Colors
+// App Colors (Premium Dark Theme)
 export const COLORS = {
-  primary: '#4CAF50',
-  secondary: '#2196F3',
-  accent: '#FF9800',
-  success: '#4CAF50',
-  warning: '#FFC107',
-  error: '#F44336',
-  background: '#F5F5F5',
-  surface: '#FFFFFF',
-  text: '#212121',
-  textSecondary: '#757575',
-  border: '#E0E0E0',
-  disabled: '#BDBDBD',
+  primary: '#6366f1',    // Indigo 500
+  secondary: '#a855f7',  // Purple 500
+  accent: '#f43f5e',     // Rose 500
+  success: '#10b981',    // Emerald 500
+  warning: '#f59e0b',    // Amber 500
+  error: '#ef4444',      // Red 500
+  background: '#0f172a', // Slate 900
+  surface: '#1e293b',    // Slate 800
+  text: '#f8fafc',       // Slate 50
+  textSecondary: '#94a3b8', // Slate 400
+  border: '#334155',     // Slate 700
+  disabled: '#475569',   // Slate 600
+  card: '#1e293b',       // Card background
+  placeholder: '#64748b',// Slate 500
+  glass: 'rgba(255, 255, 255, 0.05)',
 };
 
 // App Typography

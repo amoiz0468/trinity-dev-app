@@ -40,7 +40,7 @@ const Input: React.FC<InputProps> = ({
       >
         {icon && <View style={styles.iconContainer}>{icon}</View>}
         <TextInput
-          style={[styles.input, icon && styles.inputWithIcon, style]}
+          style={[styles.input, icon ? styles.inputWithIcon : undefined, style]}
           placeholderTextColor={COLORS.textSecondary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -62,35 +62,39 @@ const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   label: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
+    marginLeft: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // Glassy effect
+    borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: LAYOUT.borderRadius,
+    borderRadius: 16,
     paddingHorizontal: SPACING.md,
+    height: 56,
   },
   inputContainerFocused: {
     borderColor: COLORS.primary,
-    borderWidth: 2,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Subtle primary glow
   },
   inputContainerError: {
     borderColor: COLORS.error,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
   },
   input: {
     flex: 1,
-    height: 48,
+    height: '100%',
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.text,
+    fontWeight: '500',
   },
   inputWithIcon: {
     marginLeft: SPACING.sm,
@@ -105,6 +109,8 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.xs,
     color: COLORS.error,
     marginTop: SPACING.xs,
+    marginLeft: 8,
+    fontWeight: '600',
   },
 });
 

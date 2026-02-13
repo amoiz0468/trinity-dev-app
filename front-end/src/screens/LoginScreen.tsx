@@ -23,7 +23,7 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { login } = useAuth();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +53,6 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
     try {
       await login({ email: email.trim().toLowerCase(), password });
-      Alert.alert('Success', SUCCESS_MESSAGES.LOGIN_SUCCESS);
       // Navigation will happen automatically via AuthContext
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
@@ -72,55 +71,61 @@ const LoginScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.logo}>🛒</Text>
-          <Text style={styles.title}>Trinity Grocery</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>✨</Text>
+          </View>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Elevate your grocery experience</Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="Email"
+            label="Email Address"
             value={email}
             onChangeText={setEmail}
-            placeholder="Enter your email"
+            placeholder="admin@admin.com"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
             error={errors.email}
+            icon={<Text style={styles.inputIcon}>📧</Text>}
           />
 
           <Input
             label="Password"
             value={password}
             onChangeText={setPassword}
-            placeholder="Enter your password"
+            placeholder="••••••••"
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             autoComplete="password"
             error={errors.password}
+            icon={<Text style={styles.inputIcon}>🔒</Text>}
             rightIcon={
               <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
             }
             onRightIconPress={() => setShowPassword(!showPassword)}
           />
 
+          <TouchableOpacity style={styles.forgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
           <Button
-            title="Login"
+            title="Sign In"
             onPress={handleLogin}
             loading={loading}
             fullWidth
+            size="large"
             style={styles.loginButton}
           />
 
-          <TouchableOpacity style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <Text
-              style={styles.signupLink}
-              onPress={() => navigation.navigate('Signup')}
-            >
-              Sign Up
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>New to Trinity? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+              <Text style={styles.signupLink}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -134,49 +139,77 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     padding: SPACING.xl,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
     marginBottom: SPACING.xxl,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 30,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+  },
+  logoText: {
+    fontSize: 50,
   },
   title: {
-    fontSize: TYPOGRAPHY.fontSize.xxxl,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: TYPOGRAPHY.fontSize.md,
+    fontSize: 16,
     color: COLORS.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   form: {
     width: '100%',
   },
-  loginButton: {
-    marginTop: SPACING.lg,
+  inputIcon: {
+    fontSize: 18,
+    color: COLORS.textSecondary,
   },
   eyeIcon: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontSize: 20,
+    color: COLORS.textSecondary,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: SPACING.lg,
+  },
+  forgotPasswordText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loginButton: {
+    marginTop: SPACING.md,
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   signupText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
+    fontSize: 15,
     color: COLORS.textSecondary,
   },
   signupLink: {
-    fontSize: TYPOGRAPHY.fontSize.md,
+    fontSize: 15,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 

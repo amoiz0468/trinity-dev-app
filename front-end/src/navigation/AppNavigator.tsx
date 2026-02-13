@@ -19,13 +19,15 @@ import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import Loading from '../components/Loading';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import AdminScannerScreen from '../screens/AdminScannerScreen';
 import { View, Text } from 'react-native';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Tab Navigator for main app screens
-const MainTabs: React.FC = () => {
+// Tab Navigator for regular users
+const UserTabs: React.FC = () => {
   const { cart } = useCart();
 
   return (
@@ -146,9 +148,79 @@ const MainTabs: React.FC = () => {
   );
 };
 
+// Tab Navigator for administrators
+const AdminTabs: React.FC = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: COLORS.secondary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarStyle: {
+          backgroundColor: COLORS.surface,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.border,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: TYPOGRAPHY.fontSize.xs,
+          fontWeight: '600',
+        },
+        headerStyle: {
+          backgroundColor: COLORS.surface,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+        },
+        headerTitleStyle: {
+          fontSize: TYPOGRAPHY.fontSize.lg,
+          fontWeight: '700',
+          color: COLORS.text,
+        },
+      }}
+    >
+      <Tab.Screen
+        name="AdminDashboard"
+        component={AdminDashboardScreen}
+        options={{
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>📊</Text>
+          ),
+          headerTitle: 'Admin Dashboard',
+        }}
+      />
+      <Tab.Screen
+        name="AdminScan"
+        component={AdminScannerScreen}
+        options={{
+          tabBarLabel: 'Scan',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>📷</Text>
+          ),
+          headerTitle: 'Inventory Scanner',
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>👤</Text>
+          ),
+          headerTitle: 'Admin Profile',
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
 // Root Navigator
 const AppNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
 
   if (isLoading) {
     return <Loading />;
@@ -189,13 +261,14 @@ const AppNavigator: React.FC = () => {
             />
           </>
         ) : (
-          // Main App Stack
+          // Authenticated Stack
           <>
             <Stack.Screen
               name="Main"
-              component={MainTabs}
+              component={user?.role === 'admin' ? AdminTabs : UserTabs}
               options={{ headerShown: false }}
             />
+            {/* Common stacks accessible from anywhere if needed */}
             <Stack.Screen
               name="ProductDetails"
               component={ProductDetailsScreen}

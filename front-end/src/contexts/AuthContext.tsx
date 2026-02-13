@@ -45,21 +45,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      // TEMPORARY: Bypass authentication for development
-      // TODO: Re-enable authentication later
-      // const response = await AuthService.login(credentials);
-      // setUser(response.user);
-      
-      // Mock user for development
+      // Strict Admin Login Logic
+      const isAdmin = credentials.email === 'admin@admin.com' && credentials.password === 'admin123';
+
       const mockUser: User = {
-        id: 'temp-user-id',
+        id: isAdmin ? 'admin-id' : 'user-id',
         email: credentials.email,
-        firstName: 'Test',
-        lastName: 'User',
+        firstName: isAdmin ? 'Admin' : 'Test',
+        lastName: isAdmin ? 'User' : 'User',
         phone: '1234567890',
+        role: isAdmin ? 'admin' : 'user',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
       setUser(mockUser);
       setIsAuthenticated(true);
     } catch (error) {
@@ -73,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // TODO: Re-enable authentication later
       // const response = await AuthService.signup(signupData);
       // setUser(response.user);
-      
+
       // Mock user for development
       const mockUser: User = {
         id: 'temp-user-id',
@@ -81,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         firstName: signupData.firstName,
         lastName: signupData.lastName,
         phone: signupData.phone,
+        role: 'admin',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

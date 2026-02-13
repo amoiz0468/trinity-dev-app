@@ -4,6 +4,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Platform,
+  Alert,
   TouchableOpacity,
   RefreshControl,
   FlatList,
@@ -50,7 +52,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleProductPress = (product: Product) => {
-    navigation.navigate('ProductDetails' as never, { productId: product.id } as never);
+    navigation.navigate('ProductDetails' as any, { productId: product.id } as any);
   };
 
   const QuickActionCard: React.FC<{
@@ -71,9 +73,9 @@ const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>Hello, {user?.firstName || 'Guest'}!</Text>
-          <Text style={styles.subtitle}>What are you shopping for today?</Text>
+          <Text style={styles.subtitle}>Find your groceries ✨</Text>
         </View>
         <TouchableOpacity
           style={styles.cartButton}
@@ -130,7 +132,7 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          
+
           {featuredProducts.length > 0 ? (
             featuredProducts.map(product => (
               <ProductCard
@@ -165,69 +167,81 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    padding: SPACING.xl,
+    paddingTop: Platform.OS === 'ios' ? 60 : SPACING.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  },
+  greetingContainer: {
+    flex: 1,
   },
   greeting: {
-    fontSize: TYPOGRAPHY.fontSize.xl,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontSize: 16,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    marginTop: 4,
+    fontWeight: '500',
   },
   cartButton: {
-    position: 'relative',
-    padding: SPACING.sm,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   cartIcon: {
-    fontSize: 28,
+    fontSize: 24,
   },
   cartBadge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: COLORS.error,
+    top: -5,
+    right: -5,
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: COLORS.background,
   },
   cartBadgeText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.xs,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
   },
   content: {
     flex: 1,
   },
   section: {
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   seeAllText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -235,60 +249,62 @@ const styles = StyleSheet.create({
     marginHorizontal: -SPACING.xs,
   },
   actionCard: {
-    width: '48%',
-    aspectRatio: 1.5,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: SPACING.md,
+    flex: 1,
+    minWidth: '45%',
+    aspectRatio: 1.1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 24,
+    padding: SPACING.lg,
     margin: SPACING.xs,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   actionIcon: {
-    fontSize: 40,
-    marginBottom: SPACING.sm,
+    fontSize: 32,
+    marginBottom: SPACING.md,
   },
   actionTitle: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   emptyText: {
     textAlign: 'center',
     color: COLORS.textSecondary,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    marginTop: SPACING.lg,
+    fontSize: 16,
+    marginTop: SPACING.xl,
+    fontStyle: 'italic',
   },
   promoBanner: {
     flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: 12,
+    backgroundColor: COLORS.secondary,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    padding: SPACING.xl,
+    borderRadius: 24,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   promoIcon: {
-    fontSize: 40,
-    marginRight: SPACING.md,
+    fontSize: 44,
+    marginRight: SPACING.lg,
   },
   promoContent: {
     flex: 1,
   },
   promoTitle: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
-    color: COLORS.surface,
-    marginBottom: SPACING.xs,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   promoText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.surface,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
   },
 });
 

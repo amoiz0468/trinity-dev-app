@@ -5,7 +5,9 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  role?: 'user' | 'admin';
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginCredentials {
@@ -113,6 +115,38 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Admin Types
+export interface AdminStats {
+  totalRevenue: number;
+  totalOrders: number;
+  activeCustomers: number;
+  averageOrderValue: number;
+  pendingOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  revenueGrowth: number; // percentage
+  orderGrowth: number; // percentage
+}
+
+export interface Customer {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  totalOrders: number;
+  lifetimeValue: number;
+  lastOrderDate?: string;
+  createdAt: string;
+}
+
+export interface ReportData {
+  dailyRevenue: { date: string; amount: number }[];
+  topProducts: { productId: string; name: string; sales: number; revenue: number }[];
+  orderStatusDistribution: { status: string; count: number }[];
+  customerGrowth: { date: string; count: number }[];
+}
+
 // Navigation Types
 export type RootStackParamList = {
   Splash: undefined;
@@ -133,4 +167,6 @@ export type MainTabParamList = {
   Cart: undefined;
   History: undefined;
   Profile: undefined;
+  AdminDashboard: undefined;
+  AdminScan: undefined;
 };
