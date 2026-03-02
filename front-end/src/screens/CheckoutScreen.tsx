@@ -32,7 +32,7 @@ const CheckoutScreen: React.FC = () => {
   const navigation = useNavigation<CheckoutScreenNavigationProp>();
   const { cart, clearCart } = useCart();
   const { user } = useAuth();
-  
+
   const [billingInfo, setBillingInfo] = useState<BillingInfo>({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -88,7 +88,7 @@ const CheckoutScreen: React.FC = () => {
     try {
       // Create order
       const order = await OrderService.createOrder(cart.items, billingInfo);
-      
+
       // Navigate to payment screen
       navigation.navigate('Payment', { orderId: order.id });
     } catch (error: any) {
@@ -110,7 +110,7 @@ const CheckoutScreen: React.FC = () => {
       >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Billing Information</Text>
-          
+
           <Input
             label="First Name"
             value={billingInfo.firstName}
@@ -173,7 +173,7 @@ const CheckoutScreen: React.FC = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
-          
+
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Items</Text>
             <Text style={styles.summaryValue}>{cart.totalItems}</Text>
@@ -216,6 +216,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: SPACING.lg,
+    paddingBottom: 40,
   },
   section: {
     backgroundColor: COLORS.surface,

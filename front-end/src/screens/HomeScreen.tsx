@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Image } from 'react-native';
 import { MainTabParamList, Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -24,8 +25,8 @@ type HomeScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { user } = useAuth();
-  const { cart } = useCart();
+  const { user, logout } = useAuth();
+  const { cart, clearCart } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,6 +56,29 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('ProductDetails' as any, { productId: product.id } as any);
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              await clearCart();
+              navigation.navigate('Login' as never);
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const QuickActionCard: React.FC<{
     icon: string;
     title: string;
@@ -73,21 +97,35 @@ const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greeting}>Hello, {user?.firstName || 'Guest'}!</Text>
-          <Text style={styles.subtitle}>Find your groceries ✨</Text>
+        <View style={styles.headerLeftContainer}>
+          <Image
+            source={require('../../assets/trinity_logo.png')}
+            style={styles.logo}
+          />
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greeting}>Hello, {user?.firstName || 'Guest'}!</Text>
+            <Text style={styles.subtitle}>Find your groceries</Text>
+          </View>
         </View>
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={() => navigation.navigate('Cart' as never)}
-        >
-          <Text style={styles.cartIcon}>🛒</Text>
-          {cart.totalItems > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cart.totalItems}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => navigation.navigate('Cart' as never)}
+          >
+            <Text style={styles.headerIconText}>🛒</Text>
+            {cart.totalItems > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cart.totalItems}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -173,33 +211,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  logo: {
+    width: 45,
+    height: 45,
+    marginRight: SPACING.md,
+    borderRadius: 12,
+  },
+  headerLeftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   greetingContainer: {
     flex: 1,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: '500',
   },
-  cartButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoutButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    marginLeft: 12,
   },
-  cartIcon: {
-    fontSize: 24,
+  logoutButtonText: {
+    color: '#F87171',
+    fontSize: 13,
+    fontWeight: '700',
   },
   cartBadge: {
     position: 'absolute',
@@ -207,8 +261,8 @@ const styles = StyleSheet.create({
     right: -5,
     backgroundColor: COLORS.primary,
     borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -216,7 +270,7 @@ const styles = StyleSheet.create({
   },
   cartBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
   },
   content: {

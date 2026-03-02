@@ -5,11 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { MainTabParamList } from '../types';
-import { useCart } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import CartItem from '../components/CartItem';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
@@ -102,7 +103,7 @@ const CartScreen: React.FC = () => {
             {formatCurrency(cart.totalAmount)}
           </Text>
         </View>
-        
+
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>
@@ -131,17 +132,14 @@ const styles = StyleSheet.create({
   },
   itemsContainer: {
     padding: SPACING.md,
+    paddingBottom: 40,
   },
   footer: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    padding: SPACING.xl,
+    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -153,17 +151,17 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   summaryValue: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text,
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: SPACING.lg,
-    paddingTop: SPACING.md,
+    marginBottom: SPACING.xl,
+    paddingTop: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   totalLabel: {
     fontSize: TYPOGRAPHY.fontSize.lg,

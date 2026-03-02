@@ -1,6 +1,9 @@
 // API Configuration
+// Change BASE_URL to your backend endpoint (e.g., 'http://192.168.1.100:3000/api')
+// Toggle USE_MOCK_DATA to false when you are ready to use the real backend
 export const API_CONFIG = {
   BASE_URL: process.env.API_BASE_URL || 'http://localhost:3000/api',
+  USE_MOCK_DATA: true,
   TIMEOUT: 10000,
 };
 

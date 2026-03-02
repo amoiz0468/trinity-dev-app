@@ -1,6 +1,7 @@
-import apiClient from './apiClient';
 import { Product, ApiResponse } from '../types';
-import { ERROR_MESSAGES } from '../constants';
+import { ERROR_MESSAGES, API_CONFIG } from '../constants';
+import { mockProducts } from '../utils/mockAdminData';
+import apiClient from './apiClient';
 
 /**
  * Product Service
@@ -12,15 +13,16 @@ class ProductService {
    */
   async getProductByBarcode(barcode: string): Promise<Product> {
     try {
-      const response = await apiClient.get<ApiResponse<Product>>(
-        `/products/barcode/${barcode}`
-      );
-
-      if (response.success && response.data) {
-        return response.data;
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const product = mockProducts.find(p => p.barcode === barcode);
+        if (product) return product;
+        throw new Error(ERROR_MESSAGES.BARCODE_NOT_FOUND);
       }
 
-      throw new Error(ERROR_MESSAGES.BARCODE_NOT_FOUND);
+      const response = await apiClient.get<ApiResponse<Product>>(`/products/barcode/${barcode}`);
+      if (response.success && response.data) return response.data;
+      throw new Error(response.message || ERROR_MESSAGES.BARCODE_NOT_FOUND);
     } catch (error: any) {
       throw new Error(error.message || ERROR_MESSAGES.BARCODE_NOT_FOUND);
     }
@@ -31,15 +33,16 @@ class ProductService {
    */
   async getProductById(productId: string): Promise<Product> {
     try {
-      const response = await apiClient.get<ApiResponse<Product>>(
-        `/products/${productId}`
-      );
-
-      if (response.success && response.data) {
-        return response.data;
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const product = mockProducts.find(p => p.id === productId);
+        if (product) return product;
+        throw new Error('Product not found');
       }
 
-      throw new Error('Product not found');
+      const response = await apiClient.get<ApiResponse<Product>>(`/products/${productId}`);
+      if (response.success && response.data) return response.data;
+      throw new Error(response.message || 'Product not found');
     } catch (error: any) {
       throw new Error(error.message || 'Product not found');
     }
@@ -55,22 +58,37 @@ class ProductService {
     offset?: number;
   }): Promise<Product[]> {
     try {
-      const params = new URLSearchParams();
-      
-      if (filters?.category) params.append('category', filters.category);
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.limit) params.append('limit', filters.limit.toString());
-      if (filters?.offset) params.append('offset', filters.offset.toString());
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        let products = [...mockProducts];
 
-      const response = await apiClient.get<ApiResponse<Product[]>>(
-        `/products?${params.toString()}`
-      );
+        if (filters?.category) {
+          products = products.filter(p => p.category === filters.category);
+        }
 
-      if (response.success && response.data) {
-        return response.data;
+        if (filters?.search) {
+          const query = filters.search.toLowerCase();
+          products = products.filter(p =>
+            p.name.toLowerCase().includes(query) ||
+            p.brand.toLowerCase().includes(query)
+          );
+        }
+
+        const offset = filters?.offset || 0;
+        const limit = filters?.limit || products.length;
+
+        return products.slice(offset, offset + limit);
       }
 
-      return [];
+      const queryParams = new URLSearchParams({
+        ...(filters?.category && { category: filters.category }),
+        ...(filters?.search && { search: filters.search }),
+        ...(filters?.limit && { limit: filters.limit.toString() }),
+        ...(filters?.offset && { offset: filters.offset.toString() }),
+      });
+
+      const response = await apiClient.get<ApiResponse<Product[]>>(`/products?${queryParams}`);
+      return response.data || [];
     } catch (error: any) {
       console.error('Error fetching products:', error);
       return [];
@@ -82,15 +100,13 @@ class ProductService {
    */
   async getFeaturedProducts(limit: number = 10): Promise<Product[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Product[]>>(
-        `/products/featured?limit=${limit}`
-      );
-
-      if (response.success && response.data) {
-        return response.data;
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return mockProducts.slice(0, limit);
       }
 
-      return [];
+      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/featured?limit=${limit}`);
+      return response.data || [];
     } catch (error: any) {
       console.error('Error fetching featured products:', error);
       return [];
@@ -102,15 +118,13 @@ class ProductService {
    */
   async getProductsByCategory(category: string): Promise<Product[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Product[]>>(
-        `/products/category/${category}`
-      );
-
-      if (response.success && response.data) {
-        return response.data;
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return mockProducts.filter(p => p.category === category);
       }
 
-      return [];
+      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/category/${category}`);
+      return response.data || [];
     } catch (error: any) {
       console.error('Error fetching products by category:', error);
       return [];
@@ -122,15 +136,18 @@ class ProductService {
    */
   async searchProducts(query: string): Promise<Product[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Product[]>>(
-        `/products/search?q=${encodeURIComponent(query)}`
-      );
-
-      if (response.success && response.data) {
-        return response.data;
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const lowercaseQuery = query.toLowerCase();
+        return mockProducts.filter(p =>
+          p.name.toLowerCase().includes(lowercaseQuery) ||
+          p.brand.toLowerCase().includes(lowercaseQuery) ||
+          p.category.toLowerCase().includes(lowercaseQuery)
+        );
       }
 
-      return [];
+      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/search?q=${encodeURIComponent(query)}`);
+      return response.data || [];
     } catch (error: any) {
       console.error('Error searching products:', error);
       return [];
@@ -142,11 +159,13 @@ class ProductService {
    */
   async checkStock(productId: string, quantity: number): Promise<boolean> {
     try {
-      const response = await apiClient.get<ApiResponse<{ available: boolean }>>(
-        `/products/${productId}/stock?quantity=${quantity}`
-      );
+      if (API_CONFIG.USE_MOCK_DATA) {
+        const product = mockProducts.find(p => p.id === productId);
+        return (product?.stock || 0) >= quantity;
+      }
 
-      return response.success && response.data?.available === true;
+      const response = await apiClient.get<ApiResponse<{ available: boolean }>>(`/products/${productId}/stock?quantity=${quantity}`);
+      return response.data?.available || false;
     } catch (error: any) {
       console.error('Error checking stock:', error);
       return false;

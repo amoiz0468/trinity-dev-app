@@ -86,6 +86,7 @@ const AdminScannerScreen: React.FC = () => {
                         setPrice('');
                         setStock('');
                         setScanned(false);
+                        navigation.goBack();
                     }
                 }
             ]);
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
     formContent: {
         padding: SPACING.xl,
         paddingTop: 60,
+        paddingBottom: 60,
     },
     formTitle: {
         fontSize: 28,

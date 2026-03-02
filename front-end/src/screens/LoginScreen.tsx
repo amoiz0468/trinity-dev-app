@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -72,7 +73,10 @@ const LoginScreen: React.FC = () => {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>✨</Text>
+            <Image
+              source={require('../../assets/trinity_logo.png')}
+              style={styles.logo}
+            />
           </View>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Elevate your grocery experience</Text>
@@ -157,8 +161,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(99, 102, 241, 0.3)',
   },
-  logoText: {
-    fontSize: 50,
+  logo: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
   },
   title: {
     fontSize: 32,
