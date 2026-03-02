@@ -41,14 +41,14 @@ const ScannerScreen: React.FC = () => {
   const requestCameraPermission = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
     setHasPermission(status === 'granted');
-    
+
     if (status !== 'granted') {
       Alert.alert(
         'Camera Permission',
         ERROR_MESSAGES.CAMERA_PERMISSION_DENIED,
         [
           { text: 'Cancel', onPress: () => navigation.goBack() },
-          { text: 'Settings', onPress: () => {/* Open settings */} },
+          { text: 'Settings', onPress: () => {/* Open settings */ } },
         ]
       );
     }
@@ -64,17 +64,17 @@ const ScannerScreen: React.FC = () => {
     try {
       // Fetch product by barcode
       const product = await ProductService.getProductByBarcode(data);
-      
+
       // Add to cart
       addToCart(product, 1);
-      
+
       Alert.alert(
         'Product Found!',
         `${product.name} has been added to your cart.`,
         [
           {
             text: 'View Cart',
-            onPress: () => navigation.navigate('Cart' as never),
+            onPress: () => navigation.navigate('Cart' as any),
           },
           {
             text: 'Scan Another',
@@ -168,7 +168,7 @@ const ScannerScreen: React.FC = () => {
                 <Text style={styles.loadingText}>Processing...</Text>
               </View>
             )}
-            
+
             <View style={styles.controls}>
               <TouchableOpacity
                 style={styles.controlButton}

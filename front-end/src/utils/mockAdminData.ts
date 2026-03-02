@@ -1,4 +1,4 @@
-import { AdminStats, Customer, ReportData, Order, OrderStatus } from '../types';
+import { AdminStats, Customer, ReportData, Order, OrderStatus, Product } from '../types';
 
 /**
  * Mock Admin Data
@@ -106,6 +106,64 @@ export const mockReportData: ReportData = {
         { date: '2026-02-05', count: 156 },
     ],
 };
+
+export const mockProducts: Product[] = [
+    {
+        id: '1',
+        name: 'Organic Bananas',
+        barcode: '1234567890123',
+        brand: 'Nature\'s Pride',
+        category: 'Produce',
+        price: 1.50,
+        stock: 450,
+        imageUrl: 'https://images.unsplash.com/photo-1603833665858-e81b1c74672b?q=80&w=200&auto=format&fit=crop',
+        description: 'Fresh organic bananas from sustainable farms.',
+    },
+    {
+        id: '2',
+        name: 'Whole Milk',
+        barcode: '2345678901234',
+        brand: 'Dairy Fresh',
+        category: 'Dairy',
+        price: 2.80,
+        stock: 120,
+        imageUrl: 'https://images.unsplash.com/photo-1550583724-125581f77833?q=80&w=200&auto=format&fit=crop',
+        description: '1 liter of fresh whole milk.',
+    },
+    {
+        id: '3',
+        name: 'Sourdough Bread',
+        barcode: '3456789012345',
+        brand: 'Artisan Bakery',
+        category: 'Bakery',
+        price: 4.50,
+        stock: 45,
+        imageUrl: 'https://images.unsplash.com/photo-1585478259715-876acc5be8eb?q=80&w=200&auto=format&fit=crop',
+        description: 'Freshly baked sourdough bread.',
+    },
+    {
+        id: '4',
+        name: 'Free Range Eggs',
+        barcode: '4567890123456',
+        brand: 'Happy Hens',
+        category: 'Dairy',
+        price: 3.20,
+        stock: 80,
+        imageUrl: 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?q=80&w=200&auto=format&fit=crop',
+        description: 'A dozen free-range eggs.',
+    },
+    {
+        id: '5',
+        name: 'Greek Yogurt',
+        barcode: '5678901234567',
+        brand: 'Oikos',
+        category: 'Dairy',
+        price: 1.20,
+        stock: 150,
+        imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=200&auto=format&fit=crop',
+        description: 'Creamy Greek yogurt.',
+    },
+];
 
 export const mockAllOrders: Partial<Order>[] = [
     {

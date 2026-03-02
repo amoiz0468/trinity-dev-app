@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   Alert,
   Linking,
   Platform,
@@ -35,10 +36,10 @@ const PaymentScreen: React.FC = () => {
 
   const handlePayPalPayment = async () => {
     setProcessing(true);
-    
+
     try {
       const order = await OrderService.getOrderById(route.params.orderId);
-      
+
       // Initialize PayPal payment
       const paymentData = await PaymentService.initiatePayment({
         amount: cart.totalAmount,
@@ -57,7 +58,7 @@ const PaymentScreen: React.FC = () => {
         // This is a simplified simulation
         await simulatePayPalApproval(paymentData.paymentId);
       }
-      
+
     } catch (error: any) {
       Alert.alert('Payment Failed', error.message || ERROR_MESSAGES.PAYMENT_FAILED);
       setProcessing(false);
@@ -87,17 +88,17 @@ const PaymentScreen: React.FC = () => {
     try {
       // Execute the payment
       const paymentResponse = await PaymentService.executePayment(paymentId, payerId);
-      
+
       if (paymentResponse.success) {
         // Update order status
         await OrderService.updateOrderStatus(
           route.params.orderId,
           'COMPLETED' as any
         );
-        
+
         // Clear cart
         clearCart();
-        
+
         // Show success message
         Alert.alert(
           'Payment Successful!',
@@ -133,27 +134,32 @@ const PaymentScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.icon}>💳</Text>
-        <Text style={styles.title}>Complete Payment</Text>
-        <Text style={styles.subtitle}>
-          Secure payment powered by PayPal
-        </Text>
-
-        <View style={styles.amountContainer}>
-          <Text style={styles.amountLabel}>Total Amount</Text>
-          <Text style={styles.amount}>{formatCurrency(cart.totalAmount)}</Text>
-        </View>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            🔒 Your payment information is secure and encrypted
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <Text style={styles.icon}>💳</Text>
+          <Text style={styles.title}>Complete Payment</Text>
+          <Text style={styles.subtitle}>
+            Secure payment powered by PayPal
           </Text>
-          <Text style={styles.infoText}>
-            ✓ Protected by PayPal Buyer Protection
-          </Text>
+
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Total Amount</Text>
+            <Text style={styles.amount}>{formatCurrency(cart.totalAmount)}</Text>
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              🔒 Your payment information is secure and encrypted
+            </Text>
+            <Text style={styles.infoText}>
+              ✓ Protected by PayPal Buyer Protection
+            </Text>
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Button
@@ -164,7 +170,7 @@ const PaymentScreen: React.FC = () => {
           size="large"
           style={styles.payButton}
         />
-        
+
         <Button
           title="Cancel"
           onPress={() => navigation.goBack()}
@@ -183,10 +189,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: SPACING.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   icon: {
     fontSize: 80,

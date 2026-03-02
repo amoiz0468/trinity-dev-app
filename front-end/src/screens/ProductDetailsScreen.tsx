@@ -24,7 +24,7 @@ const ProductDetailsScreen: React.FC = () => {
   const route = useRoute<ProductDetailsRouteProp>();
   const navigation = useNavigation<ProductDetailsNavigationProp>();
   const { addToCart, isInCart, getItemQuantity } = useCart();
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -96,7 +96,7 @@ const ProductDetailsScreen: React.FC = () => {
           resizeMode="cover"
         />
 
-        <View style={styles.details}>
+        <View style={styles.detailsContainer}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.name}>{product.name}</Text>
@@ -215,8 +215,9 @@ const styles = StyleSheet.create({
     height: 300,
     backgroundColor: COLORS.surface,
   },
-  details: {
+  detailsContainer: {
     padding: SPACING.lg,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',

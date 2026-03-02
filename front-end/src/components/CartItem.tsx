@@ -44,7 +44,7 @@ const CartItem: React.FC<CartItemProps> = ({
         </View>
         <Text style={styles.brand}>{product.brand}</Text>
         <Text style={styles.price}>{formatCurrency(product.price)}</Text>
-        
+
         <View style={styles.footer}>
           <View style={styles.quantityContainer}>
             <TouchableOpacity
@@ -75,25 +75,22 @@ const CartItem: React.FC<CartItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: LAYOUT.borderRadius,
-    padding: SPACING.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 24,
+    padding: SPACING.lg,
     marginBottom: SPACING.md,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: LAYOUT.shadowOpacity,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   image: {
-    width: 80,
-    height: 80,
-    borderRadius: LAYOUT.borderRadius,
-    backgroundColor: COLORS.background,
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
   },
   content: {
     flex: 1,
-    marginLeft: SPACING.md,
+    marginLeft: SPACING.lg,
   },
   header: {
     flexDirection: 'row',
@@ -102,66 +99,76 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginRight: SPACING.sm,
   },
   brand: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    marginTop: 2,
+    fontWeight: '500',
   },
   price: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text,
-    marginTop: SPACING.xs,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: 4,
+    fontWeight: '600',
   },
   removeButton: {
-    padding: SPACING.xs,
+    padding: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   removeText: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontSize: 14,
     color: COLORS.error,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: LAYOUT.borderRadius,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   quantityButton: {
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
   quantityButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.3,
   },
   quantityButtonText: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontSize: 18,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   quantity: {
-    paddingHorizontal: SPACING.md,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
-    color: COLORS.text,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    minWidth: 35,
+    textAlign: 'center',
   },
   subtotal: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.primary,
   },
 });
