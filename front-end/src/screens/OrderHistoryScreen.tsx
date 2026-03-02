@@ -58,7 +58,7 @@ const OrderHistoryScreen: React.FC = () => {
   const renderOrderItem = ({ item }: { item: Order }) => (
     <TouchableOpacity
       style={styles.orderCard}
-      onPress={() => navigation.navigate('OrderConfirmation' as never, { orderId: item.id } as never)}
+      onPress={() => navigation.navigate('ProductDetails' as any, { productId: item.id } as any)}
     >
       <View style={styles.orderHeader}>
         <View>
@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: SPACING.md,
+    paddingBottom: 40,
   },
   orderCard: {
     backgroundColor: COLORS.surface,

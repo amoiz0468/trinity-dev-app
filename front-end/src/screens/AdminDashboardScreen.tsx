@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
     View,
     Text,
@@ -12,20 +12,27 @@ import {
     Dimensions,
     SafeAreaView,
     Platform,
+    Alert,
+    Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import Svg, { Path, Rect, Circle, G, Line, LinearGradient, Stop, Defs, Text as SvgText } from 'react-native-svg';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
-import { AdminStats, Customer, ReportData, Order, OrderStatus } from '../types';
+import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType } from '../types';
 import AdminService from '../services/adminService';
 import StatCard from '../components/StatCard';
 import OrderListItem from '../components/OrderListItem';
 import CustomerListItem from '../components/CustomerListItem';
 import EmptyState from '../components/EmptyState';
 import { formatCurrency } from '../utils/format';
+import AdminProductListItem from '../components/AdminProductListItem';
+import ProductModal from '../components/ProductModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type TabType = 'orders' | 'reports' | 'customers';
+type TabType = 'orders' | 'reports' | 'customers' | 'products';
 
 // --- Custom SVG Chart Components ---
 
@@ -156,6 +163,22 @@ const CategoryDistributionChart: React.FC = () => {
 // --- Main Screen Component ---
 
 const AdminDashboardScreen: React.FC = () => {
+    const navigation = useNavigation();
+    const { user, logout } = useAuth();
+    const { clearCart } = useCart();
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity
+                    style={styles.navLogoutButton}
+                    onPress={handleLogout}
+                >
+                    <Text style={styles.navLogoutButtonText}>Logout</Text>
+                </TouchableOpacity>
+            ),
+        });
+    }, [navigation]);
     const [activeTab, setActiveTab] = useState<TabType>('reports');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -173,9 +196,16 @@ const AdminDashboardScreen: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
 
+    // Products state
+    const [products, setProducts] = useState<ProductType[]>([]);
+    const [productSearch, setProductSearch] = useState('');
+    const [isProductModalVisible, setIsProductModalVisible] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<ProductType | null>(null);
+    const [showAddOptions, setShowAddOptions] = useState(false);
+
     useEffect(() => {
         loadData();
-    }, [activeTab]);
+    }, [activeTab, orderFilter]);
 
     const loadData = async () => {
         try {
@@ -183,6 +213,7 @@ const AdminDashboardScreen: React.FC = () => {
             if (activeTab === 'orders') await loadOrders();
             else if (activeTab === 'reports') await loadReports();
             else if (activeTab === 'customers') await loadCustomers();
+            else if (activeTab === 'products') await loadProducts();
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -208,6 +239,11 @@ const AdminDashboardScreen: React.FC = () => {
     const loadCustomers = async () => {
         const customersData = await AdminService.getAllCustomers();
         setCustomers(customersData);
+    };
+
+    const loadProducts = async () => {
+        const productsData = await AdminService.getProducts();
+        setProducts(productsData);
     };
 
     const handleRefresh = async () => {
@@ -239,8 +275,78 @@ const AdminDashboardScreen: React.FC = () => {
         }
     };
 
+    const handleProductSearch = async (query: string) => {
+        setProductSearch(query);
+        if (query.trim() === '') await loadProducts();
+        else {
+            const results = await AdminService.searchProducts(query);
+            setProducts(results);
+        }
+    };
+
+    const handleEditProduct = (product: ProductType) => {
+        setEditingProduct(product);
+        setIsProductModalVisible(true);
+    };
+
+    const handleAddProduct = () => {
+        setEditingProduct(null);
+        setIsProductModalVisible(true);
+    };
+
+    const handleDeleteProduct = async (productId: string) => {
+        Alert.alert(
+            'Delete Product',
+            'Are you sure you want to delete this product?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await AdminService.deleteProduct(productId);
+                        await loadProducts();
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSaveProduct = async (productData: Partial<ProductType>) => {
+        if (editingProduct) {
+            await AdminService.updateProduct(editingProduct.id, productData);
+        } else {
+            await AdminService.addProduct(productData);
+        }
+        await loadProducts();
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await logout();
+                            await clearCart();
+                            navigation.replace('Login');
+                        } catch (error: any) {
+                            Alert.alert('Error', error.message || 'Failed to logout');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const renderTabButton = (tab: TabType, label: string, icon: string) => (
         <TouchableOpacity
+            key={tab}
             style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
             onPress={() => setActiveTab(tab)}
         >
@@ -265,7 +371,12 @@ const AdminDashboardScreen: React.FC = () => {
             </View>
 
             <View style={styles.filterWrapper}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.filterContainer}
+                    contentContainerStyle={styles.filterContent}
+                >
                     {['ALL', 'PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'].map((status) => (
                         <TouchableOpacity
                             key={status}
@@ -324,18 +435,13 @@ const AdminDashboardScreen: React.FC = () => {
                     </View>
                 </View>
 
-                {/* --- ANALYTICS GRAPHS --- */}
                 <RevenueAreaChart data={reportData.dailyRevenue} />
-
                 <View style={styles.sideBySideCharts}>
                     <OrderBarChart data={reportData.orderStatusDistribution} />
                 </View>
-
                 <CustomerLineChart data={reportData.customerGrowth} />
-
                 <CategoryDistributionChart />
 
-                {/* Top Products */}
                 <Text style={styles.sectionTitle}>Top Sellers</Text>
                 {reportData.topProducts.map((product, index) => (
                     <View key={product.productId} style={styles.productItem}>
@@ -382,24 +488,109 @@ const AdminDashboardScreen: React.FC = () => {
         </View>
     );
 
+    const renderProductsTab = () => (
+        <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search products..."
+                    value={productSearch}
+                    onChangeText={handleProductSearch}
+                    placeholderTextColor={COLORS.textSecondary}
+                />
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => setShowAddOptions(!showAddOptions)}
+                >
+                    <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+            </View>
+
+            {showAddOptions && (
+                <View style={styles.addOptions}>
+                    <TouchableOpacity
+                        style={styles.addOptionItem}
+                        onPress={() => {
+                            setShowAddOptions(false);
+                            handleAddProduct();
+                        }}
+                    >
+                        <Text style={styles.addOptionIcon}>➕</Text>
+                        <Text style={styles.addOptionLabel}>Add Manually</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.addOptionItem}
+                        onPress={() => {
+                            setShowAddOptions(false);
+                            navigation.navigate('AdminScan');
+                        }}
+                    >
+                        <Text style={styles.addOptionIcon}>📸</Text>
+                        <Text style={styles.addOptionLabel}>Scan Barcode</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {loading ? (
+                <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+            ) : products.length > 0 ? (
+                <FlatList
+                    data={products}
+                    renderItem={({ item }) => (
+                        <AdminProductListItem
+                            product={item}
+                            onEdit={handleEditProduct}
+                            onDelete={handleDeleteProduct}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+                />
+            ) : (
+                <EmptyState icon="🍎" title="No Products" message="No matching products found" />
+            )}
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Dashboard</Text>
-                <Text style={styles.headerSubtitle}>Real-time performance analytics</Text>
+                <View style={styles.headerRow}>
+                    <View style={styles.headerTitleContainer}>
+                        <Image
+                            source={require('../../assets/trinity_logo.png')}
+                            style={styles.logo}
+                        />
+                        <View>
+                            <Text style={styles.headerTitle}>Admin Panel</Text>
+                            <Text style={styles.headerSubtitle}>Manage your store</Text>
+                        </View>
+                    </View>
+                </View>
             </View>
 
             <View style={styles.tabBar}>
-                {renderTabButton('reports', 'Reports', '📈')}
+                {renderTabButton('reports', 'Reports', '📊')}
                 {renderTabButton('orders', 'Orders', '📦')}
-                {renderTabButton('customers', 'Customers', '👥')}
+                {renderTabButton('products', 'Products', '🍎')}
+                {renderTabButton('customers', 'Users', '👥')}
             </View>
 
             <View style={styles.contentWrapper}>
                 {activeTab === 'orders' && renderOrdersTab()}
                 {activeTab === 'reports' && renderReportsTab()}
                 {activeTab === 'customers' && renderCustomersTab()}
+                {activeTab === 'products' && renderProductsTab()}
             </View>
+
+            <ProductModal
+                visible={isProductModalVisible}
+                product={editingProduct}
+                onClose={() => setIsProductModalVisible(false)}
+                onSave={handleSaveProduct}
+            />
         </SafeAreaView>
     );
 };
@@ -415,6 +606,35 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'ios' ? SPACING.md : SPACING.xl,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.border,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    logo: {
+        width: 40,
+        height: 40,
+        marginRight: SPACING.md,
+        borderRadius: 8,
+    },
+    navLogoutButton: {
+        marginRight: SPACING.md,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.2)',
+    },
+    navLogoutButtonText: {
+        color: '#F87171',
+        fontSize: 13,
+        fontWeight: '700',
     },
     headerTitle: {
         fontSize: 32,
@@ -443,7 +663,6 @@ const styles = StyleSheet.create({
     },
     tabButtonActive: {
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderBottomWidth: 0,
     },
     tabIcon: {
         fontSize: 20,
@@ -466,10 +685,10 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 100, // Extra padding for bottom tabs
+        paddingBottom: 40,
     },
     filterWrapper: {
-        height: 60,
+        marginBottom: SPACING.lg,
     },
     listWrapper: {
         flex: 1,
@@ -486,7 +705,117 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
     },
-    // Charts Styles
+    searchInput: {
+        flex: 1,
+        paddingVertical: SPACING.md,
+        fontSize: 16,
+        color: '#FFFFFF',
+    },
+    searchIcon: {
+        fontSize: 18,
+        marginRight: SPACING.sm,
+    },
+    addButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: SPACING.sm,
+    },
+    addButtonText: {
+        color: '#FFFFFF',
+        fontSize: 24,
+        fontWeight: '600',
+        marginTop: -2,
+    },
+    addOptions: {
+        backgroundColor: COLORS.surface,
+        marginHorizontal: SPACING.xl,
+        marginBottom: SPACING.md,
+        borderRadius: 16,
+        padding: SPACING.sm,
+        flexDirection: 'row',
+        gap: 8,
+    },
+    addOptionItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        padding: SPACING.md,
+        borderRadius: 12,
+        justifyContent: 'center',
+    },
+    addOptionIcon: {
+        fontSize: 16,
+        marginRight: 8,
+    },
+    addOptionLabel: {
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    filterContainer: {
+        marginBottom: SPACING.lg,
+    },
+    filterChip: {
+        paddingHorizontal: 20,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    filterChipActive: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    filterChipText: {
+        fontSize: 13,
+        color: '#FFFFFF',
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    filterChipTextActive: {
+        color: '#FFFFFF',
+    },
+    listContent: {
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: 40,
+    },
+    filterContent: {
+        paddingLeft: SPACING.xl,
+        paddingRight: SPACING.xl,
+    },
+    loader: {
+        marginTop: SPACING.xl,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        marginHorizontal: SPACING.xl,
+        marginTop: SPACING.xl,
+        marginBottom: SPACING.lg,
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        paddingHorizontal: SPACING.xl,
+        gap: SPACING.lg,
+    },
+    statCardHalf: {
+        flex: 1,
+    },
     chartWrapper: {
         backgroundColor: 'rgba(255, 255, 255, 0.03)',
         marginHorizontal: SPACING.xl,
@@ -534,73 +863,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         textAlign: 'right',
-    },
-    // Rest of styles
-    searchInput: {
-        flex: 1,
-        paddingVertical: SPACING.md,
-        fontSize: 16,
-        color: COLORS.text,
-    },
-    searchIcon: {
-        fontSize: 18,
-        marginRight: SPACING.sm,
-    },
-    filterContainer: {
-        paddingHorizontal: SPACING.xl,
-        marginBottom: SPACING.lg,
-    },
-    filterChip: {
-        paddingHorizontal: 20,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        marginRight: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    filterChipActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
-    },
-    filterChipText: {
-        fontSize: 13,
-        color: '#FFFFFF',
-        fontWeight: '700',
-        letterSpacing: 0.2,
-    },
-    filterChipTextActive: {
-        color: '#FFFFFF',
-    },
-    listContent: {
-        paddingHorizontal: SPACING.xl,
-        paddingBottom: 40,
-    },
-    loader: {
-        marginTop: SPACING.xl,
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: '#FFFFFF',
-        marginHorizontal: SPACING.xl,
-        marginTop: SPACING.xl,
-        marginBottom: SPACING.lg,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        paddingHorizontal: SPACING.xl,
-        gap: SPACING.lg,
-    },
-    statCardHalf: {
-        flex: 1,
     },
     productItem: {
         flexDirection: 'row',

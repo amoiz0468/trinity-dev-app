@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -80,6 +81,10 @@ const ProfileScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
+        <Image
+          source={require('../../assets/trinity_logo.png')}
+          style={styles.logo}
+        />
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
             {user?.firstName?.charAt(0) || 'U'}
@@ -172,8 +177,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     padding: SPACING.xl,
-    paddingTop: 80,
+    paddingTop: 60,
     backgroundColor: COLORS.background,
+  },
+  logo: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+    marginBottom: SPACING.lg,
   },
   avatar: {
     width: 100,

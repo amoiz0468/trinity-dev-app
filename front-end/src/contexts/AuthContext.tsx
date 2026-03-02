@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User, LoginCredentials, SignupData } from '../types';
 import AuthService from '../services/authService';
+import { API_CONFIG } from '../constants';
 
 interface AuthContextType {
   user: User | null;
@@ -29,13 +30,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // TEMPORARY: Skip authentication check for development
-      // const authenticated = await AuthService.isAuthenticated();
-      // if (authenticated) {
-      //   const userData = await AuthService.getCurrentUser();
-      //   setUser(userData);
-      //   setIsAuthenticated(true);
-      // }
+      if (!API_CONFIG.USE_MOCK_DATA) {
+        const authenticated = await AuthService.isAuthenticated();
+        if (authenticated) {
+          const userData = await AuthService.getCurrentUser();
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
+      } else {
+        // In mock mode, we could still check storage if we wanted persistence, 
+        // but for now let's just stay as is or handle mock persistence
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
     } finally {
@@ -45,7 +50,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      // Strict Admin Login Logic
+      if (!API_CONFIG.USE_MOCK_DATA) {
+        const response = await AuthService.login(credentials);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return;
+      }
+
+      // Strict Admin Login Logic for Mock
       const isAdmin = credentials.email === 'admin@admin.com' && credentials.password === 'admin123';
 
       const mockUser: User = {
@@ -68,10 +80,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signup = async (signupData: SignupData) => {
     try {
-      // TEMPORARY: Bypass authentication for development
-      // TODO: Re-enable authentication later
-      // const response = await AuthService.signup(signupData);
-      // setUser(response.user);
+      if (!API_CONFIG.USE_MOCK_DATA) {
+        const response = await AuthService.signup(signupData);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return;
+      }
 
       // Mock user for development
       const mockUser: User = {
