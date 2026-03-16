@@ -117,6 +117,7 @@ const CheckoutScreen: React.FC = () => {
             onChangeText={(value) => updateField('firstName', value)}
             placeholder="Enter first name"
             autoCapitalize="words"
+            textContentType="givenName"
             error={errors.firstName}
           />
 
@@ -126,6 +127,7 @@ const CheckoutScreen: React.FC = () => {
             onChangeText={(value) => updateField('lastName', value)}
             placeholder="Enter last name"
             autoCapitalize="words"
+            textContentType="familyName"
             error={errors.lastName}
           />
 
@@ -135,6 +137,7 @@ const CheckoutScreen: React.FC = () => {
             onChangeText={(value) => updateField('address', value)}
             placeholder="Enter street address"
             autoCapitalize="words"
+            textContentType="fullStreetAddress"
             error={errors.address}
           />
 
@@ -145,7 +148,8 @@ const CheckoutScreen: React.FC = () => {
               onChangeText={(value) => updateField('zipCode', value)}
               placeholder="Zip code"
               keyboardType="default"
-              style={styles.halfInput}
+              textContentType="postalCode"
+              containerStyle={styles.halfInput}
               error={errors.zipCode}
             />
 
@@ -155,7 +159,8 @@ const CheckoutScreen: React.FC = () => {
               onChangeText={(value) => updateField('city', value)}
               placeholder="City"
               autoCapitalize="words"
-              style={styles.halfInput}
+              textContentType="addressCity"
+              containerStyle={styles.halfInput}
               error={errors.city}
             />
           </View>
@@ -167,6 +172,7 @@ const CheckoutScreen: React.FC = () => {
             placeholder="Email for receipt"
             keyboardType="email-address"
             autoCapitalize="none"
+            textContentType="emailAddress"
             error={errors.email}
           />
         </View>
@@ -226,7 +232,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
@@ -250,7 +256,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.text,
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   totalRow: {
     marginTop: SPACING.md,
@@ -260,12 +266,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
   },
   totalValue: {
     fontSize: TYPOGRAPHY.fontSize.xl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   footer: {

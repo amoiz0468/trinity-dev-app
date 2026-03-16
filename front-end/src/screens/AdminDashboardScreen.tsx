@@ -10,17 +10,18 @@ import {
     TextInput,
     ActivityIndicator,
     Dimensions,
-    SafeAreaView,
     Platform,
     Alert,
     Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Svg, { Path, Rect, Circle, G, Line, LinearGradient, Stop, Defs, Text as SvgText } from 'react-native-svg';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
-import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType } from '../types';
+import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType, RootStackParamList, MainTabParamList } from '../types';
 import AdminService from '../services/adminService';
 import StatCard from '../components/StatCard';
 import OrderListItem from '../components/OrderListItem';
@@ -38,15 +39,26 @@ type TabType = 'orders' | 'reports' | 'customers' | 'products';
 
 const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) => {
     const chartHeight = 150;
-    const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4); // Adjusted for margin + padding
-    const maxVal = Math.max(...data.map(d => d.amount)) * 1.2;
-    const points = data.map((d, i) => ({
-        x: (i / (data.length - 1)) * chartWidth,
-        y: chartHeight - (d.amount / maxVal) * chartHeight
-    }));
+    const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
+    
+    if (!data || data.length === 0) return null;
 
-    const pathData = `M 0 ${chartHeight} ` + points.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartWidth} ${chartHeight} Z`;
-    const lineData = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+    const maxVal = Math.max(...data.map(d => d.amount), 0.01);
+    const points = data.map((d, i) => {
+        const xCoord = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
+        return {
+            x: xCoord,
+            y: chartHeight - (d.amount / maxVal) * chartHeight
+        };
+    });
+
+    const pathData = data.length > 1 
+        ? `M 0 ${chartHeight} ` + points.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartWidth} ${chartHeight} Z`
+        : `M ${points[0].x} ${chartHeight} L ${points[0].x} ${points[0].y} Z`;
+    
+    const lineData = data.length > 1
+        ? points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ')
+        : '';
 
     return (
         <View style={styles.chartWrapper}>
@@ -71,9 +83,12 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
 const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = ({ data }) => {
     const chartHeight = 120;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    const maxVal = Math.max(...data.map(d => d.count)) * 1.2;
+    
+    if (!data || data.length === 0) return null;
+
+    const maxVal = Math.max(...data.map(d => d.count), 0.01) * 1.2;
     const barWidth = 40;
-    const gap = (chartWidth - (data.length * barWidth)) / (data.length - 1);
+    const gap = data.length > 1 ? (chartWidth - (data.length * barWidth)) / (data.length - 1) : 0;
 
     return (
         <View style={styles.chartWrapper}>
@@ -81,7 +96,7 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
             <Svg height={chartHeight + 30} width={chartWidth}>
                 {data.map((d, i) => {
                     const h = (d.count / maxVal) * chartHeight;
-                    const x = i * (barWidth + gap);
+                    const x = data.length > 1 ? i * (barWidth + gap) : (chartWidth - barWidth) / 2;
                     return (
                         <G key={i}>
                             <Rect
@@ -113,15 +128,25 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
 const CustomerLineChart: React.FC<{ data: { count: number }[] }> = ({ data }) => {
     const chartHeight = 100;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    const maxVal = Math.max(...data.map(d => d.count)) * 1.1;
-    const minVal = Math.min(...data.map(d => d.count)) * 0.9;
 
-    const points = data.map((d, i) => ({
-        x: (i / (data.length - 1)) * chartWidth,
-        y: chartHeight - ((d.count - minVal) / (maxVal - minVal)) * chartHeight
-    }));
+    if (!data || data.length === 0) return null;
 
-    const lineData = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+    const maxVal = Math.max(...data.map(d => d.count), 0.01) * 1.1;
+    const minVal = Math.min(...data.map(d => d.count), 0);
+
+    const points = data.map((d, i) => {
+        const xCoord = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
+        const den = maxVal - minVal;
+        const yCoord = den > 0 ? chartHeight - ((d.count - minVal) / den) * chartHeight : chartHeight / 2;
+        return {
+            x: xCoord,
+            y: yCoord
+        };
+    });
+
+    const lineData = data.length > 1
+        ? points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ')
+        : '';
 
     return (
         <View style={styles.chartWrapper}>
@@ -163,7 +188,7 @@ const CategoryDistributionChart: React.FC = () => {
 // --- Main Screen Component ---
 
 const AdminDashboardScreen: React.FC = () => {
-    const navigation = useNavigation();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { user, logout } = useAuth();
     const { clearCart } = useCart();
 
@@ -523,7 +548,7 @@ const AdminDashboardScreen: React.FC = () => {
                         style={styles.addOptionItem}
                         onPress={() => {
                             setShowAddOptions(false);
-                            navigation.navigate('AdminScan');
+                            (navigation as any).navigate('AdminScan');
                         }}
                     >
                         <Text style={styles.addOptionIcon}>📸</Text>

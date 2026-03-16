@@ -9,7 +9,12 @@ interface LoadingProps {
 
 const Loading: React.FC<LoadingProps> = ({ message, size = 'large' }) => {
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      accessibilityLabel={message || "Loading"}
+      accessibilityRole="progressbar"
+      accessibilityState={{ busy: true }}
+    >
       <ActivityIndicator size={size} color={COLORS.primary} />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>

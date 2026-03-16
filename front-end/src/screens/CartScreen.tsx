@@ -97,14 +97,21 @@ const CartScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <View style={styles.summaryRow}>
+        <View 
+          style={styles.summaryRow}
+          accessibilityLabel={`Total items: ${cart.totalItems}, Subtotal: ${formatCurrency(cart.totalAmount)}`}
+          accessibilityRole="summary"
+        >
           <Text style={styles.summaryLabel}>Items ({cart.totalItems})</Text>
           <Text style={styles.summaryValue}>
             {formatCurrency(cart.totalAmount)}
           </Text>
         </View>
 
-        <View style={styles.totalRow}>
+        <View 
+          style={styles.totalRow}
+          accessibilityLabel={`Grand Total: ${formatCurrency(cart.totalAmount)}`}
+        >
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>
             {formatCurrency(cart.totalAmount)}
@@ -149,11 +156,12 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   summaryValue: {
     fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: COLORS.text,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   totalRow: {
     flexDirection: 'row',
@@ -165,12 +173,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
   },
   totalValue: {
     fontSize: TYPOGRAPHY.fontSize.xl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
 });

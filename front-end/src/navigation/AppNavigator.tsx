@@ -21,6 +21,7 @@ import PaymentScreen from '../screens/PaymentScreen';
 import Loading from '../components/Loading';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminScannerScreen from '../screens/AdminScannerScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import { View, Text } from 'react-native';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -283,6 +284,11 @@ const AppNavigator: React.FC = () => {
               name="Payment"
               component={PaymentScreen}
               options={{ headerTitle: 'Payment' }}
+            />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+              options={{ headerTitle: 'Edit Profile' }}
             />
           </>
         )}

@@ -72,7 +72,11 @@ const LoginScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
+          <View 
+            style={styles.logoContainer}
+            accessibilityRole="image"
+            accessibilityLabel="Trinity Logo"
+          >
             <Image
               source={require('../../assets/trinity_logo.png')}
               style={styles.logo}
@@ -111,7 +115,11 @@ const LoginScreen: React.FC = () => {
             onRightIconPress={() => setShowPassword(!showPassword)}
           />
 
-          <TouchableOpacity style={styles.forgotPassword}>
+          <TouchableOpacity 
+            style={styles.forgotPassword}
+            accessibilityLabel="Forgot Password?"
+            accessibilityRole="link"
+          >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -168,7 +176,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.text,
     textAlign: 'center',
     letterSpacing: -0.5,
@@ -178,7 +186,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 8,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   form: {
     width: '100%',

@@ -15,6 +15,9 @@ interface InputProps extends TextInputProps {
   icon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  containerStyle?: any;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -23,13 +26,16 @@ const Input: React.FC<InputProps> = ({
   icon,
   rightIcon,
   onRightIconPress,
+  containerStyle,
+  accessibilityLabel,
+  accessibilityHint,
   style,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View
         style={[
@@ -41,9 +47,12 @@ const Input: React.FC<InputProps> = ({
         {icon && <View style={styles.iconContainer}>{icon}</View>}
         <TextInput
           style={[styles.input, icon ? styles.inputWithIcon : undefined, style]}
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={COLORS.textMuted}
+          selectionColor={COLORS.primary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          accessibilityLabel={accessibilityLabel || label}
+          accessibilityHint={accessibilityHint}
           {...props}
         />
         {rightIcon && (
@@ -94,7 +103,7 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.text,
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   inputWithIcon: {
     marginLeft: SPACING.sm,
