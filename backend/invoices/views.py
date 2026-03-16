@@ -71,11 +71,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
-        if not request.user.is_staff:
+        if not request.data.get('customer'):
             customer = Customer.objects.filter(user=request.user).first()
             if not customer:
                 return Response(
-                    {'detail': 'Customer profile not found.'},
+                    {'detail': 'Customer profile not found. Please ensure you have a profile or provide a customer ID.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             payload = request.data.copy()
@@ -86,12 +86,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         invoice = serializer.save()
-        if not request.user.is_staff and invoice.payment_method in ['card', 'cash', 'other']:
-            invoice.status = 'paid'
-            invoice.paid_at = timezone.now()
-            invoice.save(update_fields=['status', 'paid_at'])
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+        # Use full serializer for the response to ensure ID and items are included
+        response_serializer = InvoiceSerializer(invoice)
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_update(self, serializer):
         invoice = serializer.save()

@@ -5,6 +5,10 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  address?: string;
+  city?: string;
+  zip_code?: string;
+  country?: string;
   role?: 'user' | 'admin';
   createdAt: string;
   updatedAt: string;
@@ -159,6 +163,7 @@ export type RootStackParamList = {
   Checkout: undefined;
   Payment: { orderId: string };
   OrderConfirmation: { orderId: string };
+  EditProfile: undefined;
 };
 
 export type MainTabParamList = {

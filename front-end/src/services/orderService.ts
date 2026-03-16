@@ -11,28 +11,33 @@ class OrderService {
    */
   async createOrder(
     items: CartItem[],
-    billingInfo: BillingInfo
+    billingInfo: BillingInfo,
+    paymentMethod: string = 'paypal'
   ): Promise<Order> {
     try {
       const orderData = {
         items: items.map(item => ({
-          productId: item.product.id,
+          product: item.product.id,
           quantity: item.quantity,
-          price: item.product.price,
+          unit_price: item.product.price,
         })),
-        billingInfo,
+        payment_method: paymentMethod,
+        tax_rate: 20.00,
+        billing_first_name: billingInfo.firstName,
+        billing_last_name: billingInfo.lastName,
+        billing_address: billingInfo.address,
+        billing_zip_code: billingInfo.zipCode,
+        billing_city: billingInfo.city,
+        billing_country: 'Switzerland', // Default as not collected yet
+        notes: '',
       };
 
-      const response = await apiClient.post<ApiResponse<Order>>(
-        '/orders',
+      const response = await apiClient.post<Order>(
+        '/invoices/',
         orderData
       );
 
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Failed to create order');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to create order');
     }
@@ -43,15 +48,10 @@ class OrderService {
    */
   async getOrderById(orderId: string): Promise<Order> {
     try {
-      const response = await apiClient.get<ApiResponse<Order>>(
-        `/orders/${orderId}`
+      const response = await apiClient.get<Order>(
+        `/invoices/${orderId}/`
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Order not found');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Order not found');
     }
@@ -65,15 +65,10 @@ class OrderService {
     offset: number = 0
   ): Promise<Order[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Order[]>>(
-        `/orders/history?limit=${limit}&offset=${offset}`
+      const response = await apiClient.get<any>(
+        `/invoices/history/?limit=${limit}&offset=${offset}`
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      return [];
+      return response.results || (Array.isArray(response) ? response : []);
     } catch (error: any) {
       console.error('Error fetching order history:', error);
       return [];
@@ -88,16 +83,11 @@ class OrderService {
     status: OrderStatus
   ): Promise<Order> {
     try {
-      const response = await apiClient.patch<ApiResponse<Order>>(
-        `/orders/${orderId}/status`,
+      const response = await apiClient.patch<Order>(
+        `/invoices/${orderId}/status/`,
         { status }
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Failed to update order status');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to update order status');
     }
@@ -108,15 +98,10 @@ class OrderService {
    */
   async cancelOrder(orderId: string): Promise<Order> {
     try {
-      const response = await apiClient.post<ApiResponse<Order>>(
-        `/orders/${orderId}/cancel`
+      const response = await apiClient.post<Order>(
+        `/invoices/${orderId}/cancel/`
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Failed to cancel order');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to cancel order');
     }
@@ -127,12 +112,12 @@ class OrderService {
    */
   async getOrderReceipt(orderId: string): Promise<string> {
     try {
-      const response = await apiClient.get<ApiResponse<{ receiptUrl: string }>>(
-        `/orders/${orderId}/receipt`
+      const response = await apiClient.get<{ receiptUrl: string }>(
+        `/invoices/${orderId}/receipt/`
       );
 
-      if (response.success && response.data?.receiptUrl) {
-        return response.data.receiptUrl;
+      if (response.receiptUrl) {
+        return response.receiptUrl;
       }
 
       throw new Error('Receipt not available');
@@ -146,14 +131,10 @@ class OrderService {
    */
   async sendReceiptEmail(orderId: string, email: string): Promise<void> {
     try {
-      const response = await apiClient.post<ApiResponse<void>>(
-        `/orders/${orderId}/send-receipt`,
+      await apiClient.post<void>(
+        `/invoices/${orderId}/send-receipt/`,
         { email }
       );
-
-      if (!response.success) {
-        throw new Error('Failed to send receipt');
-      }
     } catch (error: any) {
       throw new Error(error.message || 'Failed to send receipt');
     }
