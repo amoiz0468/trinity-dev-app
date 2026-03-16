@@ -42,21 +42,24 @@ const PaymentScreen: React.FC = () => {
 
       // Initialize PayPal payment
       const paymentData = await PaymentService.initiatePayment({
+        orderId: route.params.orderId,
         amount: cart.totalAmount,
         currency: 'USD',
-        orderId: order.id,
-        billingInfo: order.billingInfo,
       });
 
+      // Find approval URL in links
+      const approvalLink = paymentData.links.find((link: any) => link.rel === 'approve');
+      
+      if (!approvalLink) {
+        throw new Error('Approval link not found in PayPal response');
+      }
+
       // In a real app, you would open PayPal SDK here
-      // For now, we'll simulate the payment flow
       if (Platform.OS === 'web') {
-        // Open PayPal approval URL in browser
-        await Linking.openURL(paymentData.approvalUrl);
+        await Linking.openURL(approvalLink.href);
       } else {
-        // On mobile, use PayPal SDK or WebView
-        // This is a simplified simulation
-        await simulatePayPalApproval(paymentData.paymentId);
+        // On mobile, use PayPal SDK or simulation
+        await simulatePayPalApproval(paymentData.id);
       }
 
     } catch (error: any) {
@@ -84,12 +87,15 @@ const PaymentScreen: React.FC = () => {
     );
   };
 
-  const executePayment = async (paymentId: string, payerId: string) => {
+  const executePayment = async (paypalOrderId: string, payerId: string) => {
     try {
       // Execute the payment
-      const paymentResponse = await PaymentService.executePayment(paymentId, payerId);
+      const paymentResponse = await PaymentService.executePayment(
+        route.params.orderId,
+        paypalOrderId
+      );
 
-      if (paymentResponse.success) {
+      if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED') {
         // Update order status
         await OrderService.updateOrderStatus(
           route.params.orderId,
@@ -145,7 +151,11 @@ const PaymentScreen: React.FC = () => {
             Secure payment powered by PayPal
           </Text>
 
-          <View style={styles.amountContainer}>
+          <View 
+            style={styles.amountContainer}
+            accessibilityLabel={`Total amount: ${formatCurrency(cart.totalAmount)}`}
+            accessibilityRole="summary"
+          >
             <Text style={styles.amountLabel}>Total Amount</Text>
             <Text style={styles.amount}>{formatCurrency(cart.totalAmount)}</Text>
           </View>
@@ -203,7 +213,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TYPOGRAPHY.fontSize.xxxl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.text,
     marginBottom: SPACING.sm,
     textAlign: 'center',
@@ -213,6 +223,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xxl,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   amountContainer: {
     backgroundColor: COLORS.surface,
@@ -229,7 +240,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: TYPOGRAPHY.fontSize.xxxl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   infoBox: {

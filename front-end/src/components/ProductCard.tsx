@@ -23,12 +23,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, style }) =>
       style={[styles.container, style]}
       onPress={() => onPress(product)}
       activeOpacity={0.7}
+      accessibilityLabel={`Product: ${product.name} by ${product.brand}. Price: ${formatCurrency(product.price)}. ${product.stock > 0 ? 'In stock' : 'Out of stock'}`}
+      accessibilityRole="button"
+      accessibilityHint="Double tap to view product details"
     >
-      <Image
-        source={{ uri: product.imageUrl }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: product.imageUrl }}
+          style={styles.image}
+          resizeMode="cover"
+          accessibilityRole="image"
+          accessibilityLabel={product.name}
+        />
+      </View>
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={2}>
           {product.name}
@@ -51,32 +58,42 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, style }) =>
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: COLORS.surface,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: COLORS.border,
     marginBottom: SPACING.lg,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  imageContainer: {
+    width: '100%',
+    height: 180,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
-    height: 180,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    height: '100%',
   },
   content: {
     padding: SPACING.lg,
   },
   name: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.text,
     marginBottom: 4,
   },
   brand: {
     fontSize: 14,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
-    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
@@ -86,22 +103,22 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   stockBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   lowStockBadge: {
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
   },
   stockText: {
     fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: COLORS.text,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
 

@@ -10,21 +10,12 @@ class PaymentService {
   /**
    * Initialize PayPal payment
    */
-  async initiatePayment(paymentRequest: PaymentRequest): Promise<{ approvalUrl: string; paymentId: string }> {
+  async initiatePayment(params: { orderId: string; amount: number; currency: string }): Promise<{ id: string; status: string; links: any[] }> {
     try {
-      const response = await apiClient.post<ApiResponse<{ approvalUrl: string; paymentId: string }>>(
-        '/payments/paypal/create',
-        {
-          ...paymentRequest,
-          currency: PAYPAL_CONFIG.CURRENCY,
-        }
+      const response = await apiClient.post<any>(
+        `/invoices/${params.orderId}/create_paypal_order/`
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Failed to initiate payment');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to initiate payment');
     }
@@ -34,23 +25,17 @@ class PaymentService {
    * Execute PayPal payment after approval
    */
   async executePayment(
-    paymentId: string,
-    payerId: string
-  ): Promise<PaymentResponse> {
+    orderId: string,
+    paypalOrderId: string
+  ): Promise<any> {
     try {
-      const response = await apiClient.post<ApiResponse<PaymentResponse>>(
-        '/payments/paypal/execute',
+      const response = await apiClient.post<any>(
+        `/invoices/${orderId}/capture_paypal_order/`,
         {
-          paymentId,
-          payerId,
+          order_id: paypalOrderId,
         }
       );
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error('Payment execution failed');
+      return response;
     } catch (error: any) {
       throw new Error(error.message || 'Payment execution failed');
     }

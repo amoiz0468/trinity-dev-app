@@ -120,7 +120,11 @@ const SignupScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
+          <View 
+            style={styles.logoContainer}
+            accessibilityRole="image"
+            accessibilityLabel="Trinity Logo"
+          >
             <Image
               source={require('../../assets/trinity_logo.png')}
               style={styles.logo}
@@ -137,6 +141,7 @@ const SignupScreen: React.FC = () => {
             onChangeText={(value) => updateField('firstName', value)}
             placeholder="Enter your first name"
             autoCapitalize="words"
+            textContentType="givenName"
             error={errors.firstName}
           />
 
@@ -146,6 +151,7 @@ const SignupScreen: React.FC = () => {
             onChangeText={(value) => updateField('lastName', value)}
             placeholder="Enter your last name"
             autoCapitalize="words"
+            textContentType="familyName"
             error={errors.lastName}
           />
 
@@ -157,6 +163,7 @@ const SignupScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            textContentType="emailAddress"
             error={errors.email}
           />
 
@@ -167,6 +174,7 @@ const SignupScreen: React.FC = () => {
             placeholder="Enter your phone number"
             keyboardType="phone-pad"
             autoComplete="tel"
+            textContentType="telephoneNumber"
           />
 
           <Input
@@ -176,6 +184,7 @@ const SignupScreen: React.FC = () => {
             placeholder="Create a password"
             secureTextEntry={!showPassword}
             autoCapitalize="none"
+            textContentType="newPassword"
             error={errors.password}
           />
 
@@ -186,6 +195,7 @@ const SignupScreen: React.FC = () => {
             placeholder="Confirm your password"
             secureTextEntry={!showPassword}
             autoCapitalize="none"
+            textContentType="newPassword"
             error={errors.confirmPassword}
             rightIcon={
               <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
@@ -201,14 +211,14 @@ const SignupScreen: React.FC = () => {
             style={styles.signupButton}
           />
 
-          <TouchableOpacity style={styles.loginContainer}>
+          <TouchableOpacity 
+            style={styles.loginContainer}
+            onPress={() => navigation.navigate('Login')}
+            accessibilityLabel="Already have an account? Login"
+            accessibilityRole="link"
+          >
             <Text style={styles.loginText}>Already have an account? </Text>
-            <Text
-              style={styles.loginLink}
-              onPress={() => navigation.navigate('Login')}
-            >
-              Login
-            </Text>
+            <Text style={styles.loginLink}>Login</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -248,13 +258,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TYPOGRAPHY.fontSize.xxxl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   subtitle: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   form: {
     width: '100%',
@@ -273,11 +284,12 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   loginLink: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
 

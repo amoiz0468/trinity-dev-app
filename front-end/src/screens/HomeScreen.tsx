@@ -84,7 +84,13 @@ const HomeScreen: React.FC = () => {
     title: string;
     onPress: () => void;
   }> = ({ icon, title, onPress }) => (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
+    <TouchableOpacity 
+      style={styles.actionCard} 
+      onPress={onPress}
+      accessibilityLabel={title}
+      accessibilityRole="button"
+      accessibilityHint={`Open ${title}`}
+    >
       <Text style={styles.actionIcon}>{icon}</Text>
       <Text style={styles.actionTitle}>{title}</Text>
     </TouchableOpacity>
@@ -111,6 +117,9 @@ const HomeScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate('Cart' as never)}
+            accessibilityLabel={`Shopping cart, ${cart.totalItems} items`}
+            accessibilityRole="button"
+            accessibilityHint="Go to cart"
           >
             <Text style={styles.headerIconText}>🛒</Text>
             {cart.totalItems > 0 && (
@@ -122,6 +131,8 @@ const HomeScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
+            accessibilityLabel="Logout"
+            accessibilityRole="button"
           >
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
@@ -231,15 +242,15 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.text,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   logoutButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -253,7 +264,15 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#F87171',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+  },
+  headerIconButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  headerIconText: {
+    fontSize: 22,
   },
   cartBadge: {
     position: 'absolute',
@@ -288,14 +307,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.text,
     letterSpacing: -0.2,
   },
   seeAllText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -321,8 +340,8 @@ const styles = StyleSheet.create({
   },
   actionTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.text,
     textAlign: 'center',
   },
   emptyText: {
@@ -351,14 +370,14 @@ const styles = StyleSheet.create({
   },
   promoTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: '#FFFFFF',
     marginBottom: 4,
   },
   promoText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
 });
 

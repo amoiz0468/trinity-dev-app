@@ -40,7 +40,7 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
         >
             <View style={styles.header}>
                 <View style={styles.orderInfo}>
-                    <Text style={styles.orderId}>#{order.id.slice(0, 8)}</Text>
+                    <Text style={styles.orderId}>#{String(order.id || '').slice(0, 8)}</Text>
                     <Text style={styles.customerName}>
                         {order.billingInfo.firstName} {order.billingInfo.lastName}
                     </Text>

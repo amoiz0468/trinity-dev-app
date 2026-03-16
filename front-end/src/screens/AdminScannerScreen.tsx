@@ -54,8 +54,10 @@ const AdminScannerScreen: React.FC = () => {
         Vibration.vibrate(100);
 
         try {
-            const fetchedProduct = await OpenFoodService.fetchProductByBarcode(data);
+            const fetchedProduct = await AdminService.syncWithOpenFoodFacts(data);
             setProductData(fetchedProduct);
+            if (fetchedProduct.price) setPrice(fetchedProduct.price.toString());
+            if (fetchedProduct.stock !== undefined) setStock(fetchedProduct.stock.toString());
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Could not fetch product details');
             setScanned(false);
@@ -72,11 +74,20 @@ const AdminScannerScreen: React.FC = () => {
 
         try {
             setLoading(true);
-            await AdminService.addProduct({
+            
+            const updatedData = {
                 ...productData,
                 price: parseFloat(price),
                 stock: parseInt(stock, 10),
-            });
+            };
+
+            if (productData.id && productData.id !== '') {
+                // Product already exists in DB (likely from sync_openfoodfacts)
+                await AdminService.updateProduct(productData.id, updatedData);
+            } else {
+                // New product
+                await AdminService.addProduct(updatedData);
+            }
 
             Alert.alert('Success', 'Product added to inventory', [
                 {

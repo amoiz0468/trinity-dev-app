@@ -13,13 +13,14 @@ import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessibilityLabel?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -32,6 +33,7 @@ const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
+  accessibilityLabel,
   ...props
 }) => {
   const isDisabled = disabled || loading;
@@ -49,11 +51,14 @@ const Button: React.FC<ButtonProps> = ({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       {...props}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? COLORS.primary : COLORS.surface}
+          color={variant === 'outline' ? COLORS.primary : '#FFFFFF'}
         />
       ) : (
         <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
@@ -92,6 +97,9 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: COLORS.error,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
   },
   // Sizes
   small: {
@@ -138,14 +146,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.md,
   },
+  ghostText: {
+    color: COLORS.primary,
+    fontSize: TYPOGRAPHY.fontSize.md,
+  },
   smallText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   mediumText: {
     fontSize: TYPOGRAPHY.fontSize.md,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   largeText: {
     fontSize: TYPOGRAPHY.fontSize.lg,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
 
