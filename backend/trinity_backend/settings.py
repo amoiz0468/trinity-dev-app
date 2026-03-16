@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default="django-insecure-79k_c#s+7g_2jrrkg2-cn
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.1.38,*,10.0.2.2,.loca.lt', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -195,13 +195,12 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS Settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000',
+    default='http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.38:8081,http://192.168.1.38:3000,https://trinity-django-api.loca.lt',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True # Allow all origins for local development
 
 # API Documentation (drf-spectacular)
 SPECTACULAR_SETTINGS = {
