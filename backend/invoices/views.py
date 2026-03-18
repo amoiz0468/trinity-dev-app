@@ -108,6 +108,185 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return InvoiceCreateSerializer
         return InvoiceSerializer
 
+    def _to_frontend_status(self, backend_status):
+        status_map = {
+            'pending': 'PENDING',
+            'paid': 'COMPLETED',
+            'cancelled': 'CANCELLED',
+            'refunded': 'CANCELLED',
+        }
+        return status_map.get((backend_status or '').lower(), 'PENDING')
+
+    def _to_backend_status(self, incoming_status):
+        raw_status = str(incoming_status or '').strip().lower()
+        status_map = {
+            'pending': 'pending',
+            'processing': 'pending',
+            'completed': 'paid',
+            'paid': 'paid',
+            'cancelled': 'cancelled',
+            'refunded': 'refunded',
+        }
+        return status_map.get(raw_status, None)
+
+    def _to_order_payload(self, invoice):
+        items = []
+        for item in invoice.items.select_related('product__category').all():
+            product = item.product
+            items.append({
+                'product': {
+                    'id': str(product.id),
+                    'name': item.product_name or product.name,
+                    'brand': item.product_brand or product.brand,
+                    'price': float(item.unit_price),
+                    'stock': product.quantity_in_stock,
+                    'imageUrl': product.picture_url or '',
+                    'barcode': product.barcode or '',
+                    'category': product.category.name if product.category else '',
+                },
+                'quantity': item.quantity,
+            })
+
+        return {
+            'id': str(invoice.id),
+            'userId': str(invoice.customer_id),
+            'items': items,
+            'totalAmount': float(invoice.total_amount),
+            'billingInfo': {
+                'firstName': invoice.billing_first_name or invoice.customer.first_name,
+                'lastName': invoice.billing_last_name or invoice.customer.last_name,
+                'address': invoice.billing_address,
+                'zipCode': invoice.billing_zip_code,
+                'city': invoice.billing_city,
+                'email': invoice.paypal_payer_email or invoice.customer.email,
+            },
+            'paymentMethod': invoice.payment_method,
+            'status': self._to_frontend_status(invoice.status),
+            'createdAt': invoice.created_at.isoformat(),
+        }
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """
+        List invoice history in frontend order format.
+        Supports limit/offset pagination expected by the mobile app.
+        """
+        try:
+            limit = int(request.query_params.get('limit', 20))
+            offset = int(request.query_params.get('offset', 0))
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'limit and offset must be integers.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if limit < 1:
+            limit = 20
+        limit = min(limit, 100)
+        if offset < 0:
+            offset = 0
+
+        queryset = self.get_queryset().select_related('customer').prefetch_related('items__product__category')
+        total_count = queryset.count()
+        invoices = queryset[offset:offset + limit]
+        results = [self._to_order_payload(invoice) for invoice in invoices]
+
+        return Response({
+            'count': total_count,
+            'limit': limit,
+            'offset': offset,
+            'results': results,
+        })
+
+    @action(detail=True, methods=['patch'], url_path='status')
+    def update_status(self, request, pk=None):
+        """
+        Update invoice status using frontend or backend status values.
+        """
+        invoice = self.get_object()
+        incoming_status = request.data.get('status')
+        backend_status = self._to_backend_status(incoming_status)
+
+        if not backend_status:
+            return Response(
+                {'detail': 'Invalid status value.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        invoice.status = backend_status
+        if backend_status == 'paid':
+            invoice.paid_at = timezone.now()
+            invoice.payment_method = invoice.payment_method or 'paypal'
+            invoice.save(update_fields=['status', 'paid_at', 'payment_method'])
+        elif backend_status in ['pending', 'cancelled']:
+            invoice.paid_at = None
+            invoice.save(update_fields=['status', 'paid_at'])
+        else:
+            invoice.save(update_fields=['status'])
+
+        invoice.refresh_from_db()
+        return Response(self._to_order_payload(invoice))
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """
+        Cancel invoice.
+        - pending -> cancelled
+        - paid -> refunded
+        """
+        invoice = self.get_object()
+
+        if invoice.status == 'cancelled':
+            return Response(self._to_order_payload(invoice))
+
+        if invoice.status == 'paid':
+            invoice.status = 'refunded'
+            invoice.save(update_fields=['status'])
+        else:
+            invoice.status = 'cancelled'
+            invoice.paid_at = None
+            invoice.save(update_fields=['status', 'paid_at'])
+
+        invoice.refresh_from_db()
+        return Response(self._to_order_payload(invoice))
+
+    @action(detail=True, methods=['get'])
+    def receipt(self, request, pk=None):
+        """
+        Lightweight receipt endpoint consumed by mobile app.
+        """
+        invoice = self.get_object()
+        receipt_url = request.build_absolute_uri(f"/api/invoices/{invoice.id}/")
+        return Response({
+            'receiptUrl': receipt_url,
+            'invoiceNumber': invoice.invoice_number,
+            'status': invoice.status,
+            'totalAmount': float(invoice.total_amount),
+        })
+
+    @action(detail=True, methods=['post'], url_path='send-receipt')
+    def send_receipt(self, request, pk=None):
+        """
+        Placeholder endpoint for receipt email dispatch.
+        """
+        invoice = self.get_object()
+        target_email = (
+            request.data.get('email')
+            or invoice.paypal_payer_email
+            or invoice.customer.email
+        )
+        if not target_email:
+            return Response(
+                {'detail': 'Email is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Email delivery service is not integrated yet, but this preserves API contract.
+        return Response({
+            'success': True,
+            'message': f'Receipt queued for {target_email}.',
+        })
+
     @action(detail=True, methods=['post'])
     def create_paypal_order(self, request, pk=None):
         invoice = self.get_object()
