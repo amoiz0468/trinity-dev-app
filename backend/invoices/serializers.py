@@ -62,7 +62,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
-            'customer', 'invoice_number', 'payment_method',
+            'id', 'customer', 'invoice_number', 'payment_method',
             'tax_rate', 'notes',
             'billing_first_name', 'billing_last_name', 'billing_address',
             'billing_zip_code', 'billing_city', 'billing_country',
@@ -92,12 +92,13 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         validated_data['subtotal'] = subtotal
         validated_data['tax_amount'] = tax_amount
         validated_data['total_amount'] = total_amount
-        if validated_data.get('payment_method') == 'paypal':
-            validated_data['status'] = 'pending'
-            validated_data['paid_at'] = None
-        else:
+        if validated_data.get('payment_method') == 'cash':
             validated_data['status'] = 'paid'
             validated_data['paid_at'] = timezone.now()
+        else:
+            # Default to pending for card, paypal, and other until processed
+            validated_data['status'] = 'pending'
+            validated_data['paid_at'] = None
 
         with transaction.atomic():
             locked_products = {}

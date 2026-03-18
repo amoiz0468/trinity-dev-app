@@ -173,6 +173,8 @@ const ScannerScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.controlButton}
                 onPress={() => setTorch(!torch)}
+                accessibilityLabel={torch ? 'Torch on, tap to turn off' : 'Torch off, tap to turn on'}
+                accessibilityRole="button"
               >
                 <Text style={styles.controlIcon}>{torch ? '🔦' : '💡'}</Text>
                 <Text style={styles.controlText}>Flash</Text>
@@ -181,6 +183,8 @@ const ScannerScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.controlButton}
                 onPress={() => navigation.goBack()}
+                accessibilityLabel="Cancel scanning"
+                accessibilityRole="button"
               >
                 <Text style={styles.controlIcon}>✕</Text>
                 <Text style={styles.controlText}>Cancel</Text>
@@ -213,9 +217,9 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    color: COLORS.surface,
+    color: '#FFFFFF',
     textAlign: 'center',
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   scanningArea: {
     justifyContent: 'center',
@@ -267,8 +271,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.surface,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   controls: {
     flexDirection: 'row',
@@ -285,8 +289,8 @@ const styles = StyleSheet.create({
   },
   controlText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.surface,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   permissionText: {
     fontSize: TYPOGRAPHY.fontSize.md,

@@ -97,8 +97,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         
         try:
             # Query Open Food Facts API
-            url = f"{settings.OPEN_FOOD_FACTS_API_URL}/product/{barcode}"
-            response = requests.get(url)
+            # Open Food Facts requires a User-Agent header and .json extension is more reliable
+            url = f"{settings.OPEN_FOOD_FACTS_API_URL}/product/{barcode}.json"
+            headers = {'User-Agent': 'Trinity-Dev-App - iOS - Version 1.0 - https://github.com/amoiz0468/trinity-dev-app'}
+            response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code != 200:
                 return Response(

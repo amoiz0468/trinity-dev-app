@@ -58,7 +58,10 @@ const OrderHistoryScreen: React.FC = () => {
   const renderOrderItem = ({ item }: { item: Order }) => (
     <TouchableOpacity
       style={styles.orderCard}
-      onPress={() => navigation.navigate('ProductDetails' as any, { productId: item.id } as any)}
+      onPress={() => navigation.navigate('History' as never)}
+      accessibilityLabel={`Order #${item.id.slice(0, 8)}, status: ${item.status}, total: ${formatCurrency(item.totalAmount)}`}
+      accessibilityRole="button"
+      accessibilityHint="Double tap to view order details"
     >
       <View style={styles.orderHeader}>
         <View>
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
   },
   orderId: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
   },
   orderDate: {
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: TYPOGRAPHY.fontSize.xs,
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   orderDetails: {
     flexDirection: 'row',
@@ -176,7 +179,7 @@ const styles = StyleSheet.create({
   },
   orderTotal: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   orderFooter: {

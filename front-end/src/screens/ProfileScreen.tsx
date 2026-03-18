@@ -52,6 +52,9 @@ const ProfileScreen: React.FC = () => {
       style={styles.profileItem}
       onPress={onPress}
       disabled={!onPress}
+      accessibilityLabel={`${label}: ${value}`}
+      accessibilityRole={onPress ? "button" : "none"}
+      accessibilityHint={onPress ? `Double tap to edit ${label}` : undefined}
     >
       <View style={styles.profileItemLeft}>
         <Text style={styles.profileIcon}>{icon}</Text>
@@ -69,7 +72,12 @@ const ProfileScreen: React.FC = () => {
     title: string;
     onPress: () => void;
   }> = ({ icon, title, onPress }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <TouchableOpacity 
+      style={styles.menuItem} 
+      onPress={onPress}
+      accessibilityLabel={title}
+      accessibilityRole="button"
+    >
       <View style={styles.menuItemLeft}>
         <Text style={styles.menuIcon}>{icon}</Text>
         <Text style={styles.menuTitle}>{title}</Text>
@@ -97,7 +105,17 @@ const ProfileScreen: React.FC = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account Information</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Account Information</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('EditProfile' as never)}
+            style={styles.editButton}
+            accessibilityLabel="Edit Profile"
+            accessibilityRole="button"
+          >
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.card}>
           <ProfileItem
             icon="👤"
@@ -199,20 +217,20 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 40,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   name: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.text,
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   email: {
     fontSize: 16,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   section: {
     paddingHorizontal: SPACING.xl,
@@ -220,12 +238,31 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginLeft: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  editButton: {
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+  },
+  editButtonText: {
+    fontSize: 12,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: COLORS.primary,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.03)',

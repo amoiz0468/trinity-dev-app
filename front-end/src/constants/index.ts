@@ -1,10 +1,10 @@
+import { Platform } from 'react-native';
+
 // API Configuration
-// Change BASE_URL to your backend endpoint (e.g., 'http://192.168.1.100:3000/api')
-// Toggle USE_MOCK_DATA to false when you are ready to use the real backend
 export const API_CONFIG = {
-  BASE_URL: process.env.API_BASE_URL || 'http://localhost:3000/api',
-  USE_MOCK_DATA: true,
-  TIMEOUT: 10000,
+  BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000/api', // Use localhost for Simulator
+  USE_MOCK_DATA: false, // Set to false to use the real backend
+  TIMEOUT: 15000,      // Increased timeout for remote connections
 };
 
 // PayPal Configuration
@@ -14,31 +14,34 @@ export const PAYPAL_CONFIG = {
   ENVIRONMENT: 'sandbox', // Change to 'production' for live
 };
 
-// App Colors (Premium Dark Theme)
+// App Colors (Sapphire Night Theme - Premium & Vibrant)
 export const COLORS = {
-  primary: '#6366f1',    // Indigo 500
-  secondary: '#a855f7',  // Purple 500
-  accent: '#f43f5e',     // Rose 500
-  success: '#10b981',    // Emerald 500
-  warning: '#f59e0b',    // Amber 500
-  error: '#ef4444',      // Red 500
-  background: '#0f172a', // Slate 900
-  surface: '#1e293b',    // Slate 800
-  text: '#f8fafc',       // Slate 50
-  textSecondary: '#94a3b8', // Slate 400
-  border: '#334155',     // Slate 700
-  disabled: '#475569',   // Slate 600
-  card: '#1e293b',       // Card background
-  placeholder: '#64748b',// Slate 500
-  glass: 'rgba(255, 255, 255, 0.05)',
+  primary: '#4F46E5',    // Indigo 600
+  secondary: '#7C3AED',  // Violet 600
+  accent: '#F43F5E',     // Rose 500
+  success: '#10B981',    // Emerald 500
+  warning: '#F59E0B',    // Amber 500
+  error: '#EF4444',      // Red 500
+  background: '#0F172A', // Slate 900
+  surface: '#1E293B',    // Slate 800
+  surfaceLight: '#334155', // Slate 700
+  text: '#F8FAFC',       // Slate 50
+  textSecondary: '#94A3B8', // Slate 400
+  textMuted: '#64748B',  // Slate 500
+  border: 'rgba(255, 255, 255, 0.1)',
+  disabled: '#1E293B',
+  placeholder: '#64748B',
+  glass: 'rgba(255, 255, 255, 0.03)',
+  cardGradient: ['#1E293B', '#0F172A'],
 };
 
-// App Typography
+// App Typography (Premium Scale)
 export const TYPOGRAPHY = {
   fontFamily: {
-    regular: 'System',
-    medium: 'System',
-    bold: 'System',
+    regular: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    medium: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+    bold: Platform.OS === 'ios' ? 'System' : 'sans-serif-bold',
+    black: Platform.OS === 'ios' ? 'System' : 'sans-serif-condensed-light',
   },
   fontSize: {
     xs: 12,
@@ -48,6 +51,12 @@ export const TYPOGRAPHY = {
     xl: 20,
     xxl: 24,
     xxxl: 32,
+    display: 40,
+  },
+  lineHeight: {
+    tight: 1.2,
+    normal: 1.5,
+    relaxed: 1.75,
   },
 };
 

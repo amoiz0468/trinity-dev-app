@@ -19,25 +19,50 @@ class AuthService {
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<ApiResponse<AuthResponse>>(
-        '/auth/login',
-        credentials
+      // SimpleJWT expects `username`
+      const payload = {
+        username: (credentials as any).email || (credentials as any).username || '',
+        password: credentials.password,
+      };
+
+      const response = await apiClient.post<any>(
+        '/auth/token/',
+        payload
       );
 
-      if (response.success && response.data) {
+      if (response.access) {
         // Store token securely
         await StorageService.saveSecure(
           STORAGE_KEYS.AUTH_TOKEN,
-          response.data.token
+          response.access
         );
-        
-        // Store user data
-        await StorageService.save(STORAGE_KEYS.USER_DATA, response.data.user);
 
-        return response.data;
+        // Fetch user data
+        const userResp = await apiClient.get<any>('/auth/me/');
+        const sourceData = userResp?.customer || userResp?.user || userResp;
+        const isStaff = userResp?.user?.is_staff || sourceData.is_staff;
+
+        const userData = {
+          ...sourceData,
+          role: isStaff ? 'admin' : 'user',
+          firstName: sourceData.first_name || sourceData.firstName,
+          lastName: sourceData.last_name || sourceData.lastName,
+          phone: sourceData.phone_number || sourceData.phone,
+          address: sourceData.address,
+          city: sourceData.city,
+          zip_code: sourceData.zip_code,
+          country: sourceData.country,
+          createdAt: sourceData.created_at || sourceData.createdAt,
+          updatedAt: sourceData.updated_at || sourceData.updatedAt,
+        };
+
+        // Store user data
+        await StorageService.save(STORAGE_KEYS.USER_DATA, userData);
+
+        return { token: response.access, user: userData } as AuthResponse;
       }
 
-      throw new Error(response.message || 'Login failed');
+      throw new Error(response.detail || 'Login failed');
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
     }
@@ -48,25 +73,32 @@ class AuthService {
    */
   async signup(signupData: SignupData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<ApiResponse<AuthResponse>>(
-        '/auth/signup',
-        signupData
+      const payload = {
+        email: signupData.email,
+        password: signupData.password,
+        first_name: signupData.firstName || 'User',
+        last_name: signupData.lastName || 'Name',
+        phone_number: signupData.phone || '0000000000',
+        address: 'N/A', // Default values as frontend doesn't collect these on signup yet
+        zip_code: '00000',
+        city: 'N/A',
+        country: 'N/A'
+      };
+
+      const response = await apiClient.post<any>(
+        '/auth/register/',
+        payload
       );
 
-      if (response.success && response.data) {
-        // Store token securely
-        await StorageService.saveSecure(
-          STORAGE_KEYS.AUTH_TOKEN,
-          response.data.token
-        );
-        
-        // Store user data
-        await StorageService.save(STORAGE_KEYS.USER_DATA, response.data.user);
-
-        return response.data;
+      if (response) {
+        // Auto-login after successful registration to retrieve the token
+        return await this.login({
+          ...signupData,
+          email: signupData.email
+        } as LoginCredentials);
       }
 
-      throw new Error(response.message || 'Signup failed');
+      throw new Error(response.detail || 'Signup failed');
     } catch (error: any) {
       throw new Error(error.message || 'Signup failed');
     }
@@ -77,10 +109,8 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      // Call logout endpoint (optional)
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout API error:', error);
+      // No need for a logout endpoint call with simplejwt unless blacklisting
+
     } finally {
       // Clear local data
       await StorageService.deleteSecure(STORAGE_KEYS.AUTH_TOKEN);
@@ -116,11 +146,28 @@ class AuthService {
    */
   async refreshUserData(): Promise<User> {
     try {
-      const response = await apiClient.get<ApiResponse<User>>('/auth/me');
-      
-      if (response.success && response.data) {
-        await StorageService.save(STORAGE_KEYS.USER_DATA, response.data);
-        return response.data;
+      const response = await apiClient.get<any>('/auth/me/');
+
+      if (response) {
+        const sourceData = response.customer || response.user || response;
+        const isStaff = response.user?.is_staff || sourceData.is_staff;
+
+        const userData = {
+          ...sourceData,
+          role: isStaff ? 'admin' : 'user',
+          firstName: sourceData.first_name || sourceData.firstName,
+          lastName: sourceData.last_name || sourceData.lastName,
+          phone: sourceData.phone_number || sourceData.phone,
+          address: sourceData.address,
+          city: sourceData.city,
+          zip_code: sourceData.zip_code,
+          country: sourceData.country,
+          createdAt: sourceData.created_at || sourceData.createdAt,
+          updatedAt: sourceData.updated_at || sourceData.updatedAt,
+        };
+
+        await StorageService.save(STORAGE_KEYS.USER_DATA, userData);
+        return userData as User;
       }
 
       throw new Error('Failed to refresh user data');
@@ -134,14 +181,36 @@ class AuthService {
    */
   async updateProfile(userData: Partial<User>): Promise<User> {
     try {
-      const response = await apiClient.put<ApiResponse<User>>(
-        '/auth/profile',
-        userData
+      const payload: any = { ...userData };
+      if (userData.firstName) payload.first_name = userData.firstName;
+      if (userData.lastName) payload.last_name = userData.lastName;
+      if (userData.phone) payload.phone_number = userData.phone;
+
+      const response = await apiClient.patch<any>(
+        '/auth/me/',
+        payload
       );
 
-      if (response.success && response.data) {
-        await StorageService.save(STORAGE_KEYS.USER_DATA, response.data);
-        return response.data;
+      if (response) {
+        const sourceData = response.customer || response.user || response;
+        const isStaff = response.user?.is_staff || sourceData.is_staff;
+
+        const updatedUser = {
+          ...sourceData,
+          role: isStaff ? 'admin' : 'user',
+          firstName: sourceData.first_name || sourceData.firstName,
+          lastName: sourceData.last_name || sourceData.lastName,
+          phone: sourceData.phone_number || sourceData.phone,
+          address: sourceData.address,
+          city: sourceData.city,
+          zip_code: sourceData.zip_code,
+          country: sourceData.country,
+          createdAt: sourceData.created_at || sourceData.createdAt,
+          updatedAt: sourceData.updated_at || sourceData.updatedAt,
+        };
+
+        await StorageService.save(STORAGE_KEYS.USER_DATA, updatedUser);
+        return updatedUser as User;
       }
 
       throw new Error('Failed to update profile');

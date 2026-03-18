@@ -45,7 +45,7 @@ class ApiClient {
         if (error.response) {
           // Server responded with error status
           const status = error.response.status;
-          
+
           if (status === 401) {
             // Unauthorized - clear token and redirect to login
             await StorageService.deleteSecure(STORAGE_KEYS.AUTH_TOKEN);
@@ -56,14 +56,11 @@ class ApiClient {
           } else if (status >= 500) {
             throw new Error(ERROR_MESSAGES.SERVER_ERROR);
           }
-          
           throw new Error(error.response.data?.message || 'Request failed');
         } else if (error.request) {
-          // Request made but no response
           throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
         } else {
-          // Error in request setup
-          throw new Error(error.message);
+          throw new Error(error.message || 'Unknown request error');
         }
       }
     );

@@ -35,6 +35,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
     const [stock, setStock] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [description, setDescription] = useState('');
+    const [calories, setCalories] = useState('');
+    const [protein, setProtein] = useState('');
+    const [carbohydrates, setCarbohydrates] = useState('');
+    const [fat, setFat] = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -46,6 +50,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
             setStock(product.stock.toString());
             setImageUrl(product.imageUrl);
             setDescription(product.description || '');
+            if (product.nutritionalInfo) {
+                setCalories(product.nutritionalInfo.calories.toString());
+                setProtein(product.nutritionalInfo.protein.toString());
+                setCarbohydrates(product.nutritionalInfo.carbohydrates.toString());
+                setFat(product.nutritionalInfo.fat.toString());
+            } else {
+                setCalories('');
+                setProtein('');
+                setCarbohydrates('');
+                setFat('');
+            }
         } else {
             setName('');
             setBrand('');
@@ -54,6 +69,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
             setStock('');
             setImageUrl('');
             setDescription('');
+            setCalories('');
+            setProtein('');
+            setCarbohydrates('');
+            setFat('');
         }
     }, [product, visible]);
 
@@ -73,6 +92,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 stock: parseInt(stock, 10),
                 imageUrl,
                 description,
+                nutritionalInfo: {
+                    calories: parseFloat(calories) || 0,
+                    protein: parseFloat(protein) || 0,
+                    carbohydrates: parseFloat(carbohydrates) || 0,
+                    fat: parseFloat(fat) || 0,
+                    servingSize: '100g'
+                }
             });
             onClose();
         } catch (error: any) {
@@ -102,7 +128,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                             <Text style={styles.closeIcon}>✕</Text>
                         </TouchableOpacity>
                     </View>
-
+ 
                     <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Product Name *</Text>
@@ -114,7 +140,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 placeholderTextColor={COLORS.textSecondary}
                             />
                         </View>
-
+ 
                         <View style={styles.row}>
                             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                                 <Text style={styles.label}>Brand</Text>
@@ -137,7 +163,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 />
                             </View>
                         </View>
-
+ 
                         <View style={styles.row}>
                             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                                 <Text style={styles.label}>Price ($) *</Text>
@@ -163,6 +189,57 @@ const ProductModal: React.FC<ProductModalProps> = ({
                             </View>
                         </View>
 
+                        <Text style={styles.sectionHeader}>Nutritional Info (per 100g)</Text>
+                        <View style={styles.row}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                                <Text style={styles.label}>Calories (kcal)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={calories}
+                                    onChangeText={setCalories}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={COLORS.textSecondary}
+                                />
+                            </View>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>Protein (g)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={protein}
+                                    onChangeText={setProtein}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={COLORS.textSecondary}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.row}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                                <Text style={styles.label}>Carbs (g)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={carbohydrates}
+                                    onChangeText={setCarbohydrates}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={COLORS.textSecondary}
+                                />
+                            </View>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>Fat (g)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={fat}
+                                    onChangeText={setFat}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={COLORS.textSecondary}
+                                />
+                            </View>
+                        </View>
+ 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Image URL</Text>
                             <TextInput
@@ -173,7 +250,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 placeholderTextColor={COLORS.textSecondary}
                             />
                         </View>
-
+ 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Description</Text>
                             <TextInput
@@ -262,6 +339,16 @@ const styles = StyleSheet.create({
     buttonContainer: {
         marginTop: SPACING.lg,
         marginBottom: SPACING.xl,
+    },
+    sectionHeader: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        marginTop: SPACING.md,
+        marginBottom: SPACING.md,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+        paddingBottom: 4,
     },
 });
 

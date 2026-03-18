@@ -94,6 +94,8 @@ const ProductDetailsScreen: React.FC = () => {
           source={{ uri: product.imageUrl }}
           style={styles.image}
           resizeMode="cover"
+          accessibilityRole="image"
+          accessibilityLabel={product.name}
         />
 
         <View style={styles.detailsContainer}>
@@ -164,14 +166,23 @@ const ProductDetailsScreen: React.FC = () => {
 
       <View style={styles.footer}>
         <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>Quantity:</Text>
-          <View style={styles.quantityControls}>
+          <Text 
+            style={styles.quantityLabel}
+            accessibilityRole="text"
+          >
+            Quantity:
+          </Text>
+          <View 
+            style={styles.quantityControls}
+            accessibilityLabel={`Select quantity, current quantity is ${quantity}`}
+          >
             <Button
               title="−"
               onPress={decrementQuantity}
               disabled={quantity <= 1}
               size="small"
               style={styles.quantityButton}
+              accessibilityLabel="Decrease quantity"
             />
             <Text style={styles.quantity}>{quantity}</Text>
             <Button
@@ -180,6 +191,7 @@ const ProductDetailsScreen: React.FC = () => {
               disabled={quantity >= product.stock}
               size="small"
               style={styles.quantityButton}
+              accessibilityLabel="Increase quantity"
             />
           </View>
         </View>
@@ -231,17 +243,18 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: TYPOGRAPHY.fontSize.xxl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   brand: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   price: {
     fontSize: TYPOGRAPHY.fontSize.xl,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
     color: COLORS.primary,
   },
   infoRow: {
@@ -258,7 +271,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
   },
   lowStock: {
@@ -269,7 +282,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },

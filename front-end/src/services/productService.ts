@@ -9,6 +9,33 @@ import apiClient from './apiClient';
  */
 class ProductService {
   /**
+   * Map backend product to frontend Product type
+   */
+  private mapProduct(data: any): Product {
+    return {
+      id: String(data.id || ''),
+      name: data.name || '',
+      barcode: data.barcode || '',
+      brand: data.brand || '',
+      category: data.category_name || data.category?.name || String(data.category || ''),
+      price: Number(data.price || 0),
+      stock: Number(data.quantity_in_stock || 0),
+      imageUrl: data.picture_url || data.picture || '',
+      description: data.description || '',
+      nutritionalInfo: {
+        calories: Number(data.energy_kcal || 0),
+        protein: Number(data.proteins || 0),
+        carbohydrates: Number(data.carbohydrates || 0),
+        fat: Number(data.fat || 0),
+        fiber: Number(data.fiber || 0),
+        sugar: Number(data.sugars || 0),
+        sodium: Number(data.salt || 0),
+        servingSize: '100g'
+      }
+    };
+  }
+
+  /**
    * Get product by barcode
    */
   async getProductByBarcode(barcode: string): Promise<Product> {
@@ -20,9 +47,8 @@ class ProductService {
         throw new Error(ERROR_MESSAGES.BARCODE_NOT_FOUND);
       }
 
-      const response = await apiClient.get<ApiResponse<Product>>(`/products/barcode/${barcode}`);
-      if (response.success && response.data) return response.data;
-      throw new Error(response.message || ERROR_MESSAGES.BARCODE_NOT_FOUND);
+      const response = await apiClient.get<any>(`/products/barcode/${barcode}/`);
+      return this.mapProduct(response);
     } catch (error: any) {
       throw new Error(error.message || ERROR_MESSAGES.BARCODE_NOT_FOUND);
     }
@@ -40,9 +66,8 @@ class ProductService {
         throw new Error('Product not found');
       }
 
-      const response = await apiClient.get<ApiResponse<Product>>(`/products/${productId}`);
-      if (response.success && response.data) return response.data;
-      throw new Error(response.message || 'Product not found');
+      const response = await apiClient.get<any>(`/products/${productId}/`);
+      return this.mapProduct(response);
     } catch (error: any) {
       throw new Error(error.message || 'Product not found');
     }
@@ -87,8 +112,9 @@ class ProductService {
         ...(filters?.offset && { offset: filters.offset.toString() }),
       });
 
-      const response = await apiClient.get<ApiResponse<Product[]>>(`/products?${queryParams}`);
-      return response.data || [];
+      const response = await apiClient.get<any>(`/products/?${queryParams}`);
+      const results = response.results || (Array.isArray(response) ? response : []);
+      return results.map((p: any) => this.mapProduct(p));
     } catch (error: any) {
       console.error('Error fetching products:', error);
       return [];
@@ -105,8 +131,9 @@ class ProductService {
         return mockProducts.slice(0, limit);
       }
 
-      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/featured?limit=${limit}`);
-      return response.data || [];
+      const response = await apiClient.get<any>(`/products/?limit=${limit}`);
+      const results = response.results || (Array.isArray(response) ? response : []);
+      return results.map((p: any) => this.mapProduct(p));
     } catch (error: any) {
       console.error('Error fetching featured products:', error);
       return [];
@@ -123,8 +150,9 @@ class ProductService {
         return mockProducts.filter(p => p.category === category);
       }
 
-      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/category/${category}`);
-      return response.data || [];
+      const response = await apiClient.get<any>(`/products/?search=${encodeURIComponent(category)}`);
+      const results = response.results || (Array.isArray(response) ? response : []);
+      return results.map((p: any) => this.mapProduct(p));
     } catch (error: any) {
       console.error('Error fetching products by category:', error);
       return [];
@@ -146,8 +174,9 @@ class ProductService {
         );
       }
 
-      const response = await apiClient.get<ApiResponse<Product[]>>(`/products/search?q=${encodeURIComponent(query)}`);
-      return response.data || [];
+      const response = await apiClient.get<any>(`/products/?search=${encodeURIComponent(query)}`);
+      const results = response.results || (Array.isArray(response) ? response : []);
+      return results.map((p: any) => this.mapProduct(p));
     } catch (error: any) {
       console.error('Error searching products:', error);
       return [];
@@ -164,8 +193,8 @@ class ProductService {
         return (product?.stock || 0) >= quantity;
       }
 
-      const response = await apiClient.get<ApiResponse<{ available: boolean }>>(`/products/${productId}/stock?quantity=${quantity}`);
-      return response.data?.available || false;
+      const response = await apiClient.get<any>(`/products/${productId}/`);
+      return response && Number(response.quantity_in_stock || 0) >= quantity;
     } catch (error: any) {
       console.error('Error checking stock:', error);
       return false;
