@@ -3,8 +3,8 @@ Date: 2026-03-18
 
 Summary
 - Total integration groups tracked: 18
-- Integrations done: 12
-- Integrations missing/incomplete: 6
+- Integrations done: 13
+- Integrations missing/incomplete: 5
 
 Done Integrations
 1) Auth login (JWT token) integrated
@@ -36,30 +36,28 @@ Done Integrations
    - GET /api/invoices/{id}/receipt/
    - POST /api/invoices/{id}/send-receipt/
    - Note: send-receipt currently returns a success response placeholder (no SMTP provider wired yet).
+13) Payment verify/process/refund endpoints integrated
+   - GET /api/payments/verify/{transactionId}
+   - POST /api/payments/process
+   - POST /api/payments/refund
+   - Note: refund and process are app-level processing flows (no PSP-specific refund API call wired yet).
 
 Missing / Incomplete Integrations
-1) Payment verify/process/refund integration missing
-   - Frontend expects:
-     - GET /api/payments/verify/{transactionId}
-     - POST /api/payments/process
-     - POST /api/payments/refund
-   - Backend routes not implemented.
-
-2) Order confirmation navigation target missing
+1) Order confirmation navigation target missing
    - Frontend navigates to OrderConfirmation after payment,
      but screen/route is not implemented in navigator.
 
-3) Order status contract mismatch
+2) Order status contract mismatch
    - Frontend status enum: PENDING/PROCESSING/COMPLETED/CANCELLED
    - Backend status enum: pending/paid/cancelled/refunded
 
-4) Cart backend integration incomplete
+3) Cart backend integration incomplete
    - Backend has /api/cart/* endpoints
    - Frontend cart is local-storage/context based and does not sync with backend cart endpoints.
 
-5) Order/customer data mapping gaps
+4) Order/customer data mapping gaps
    - Some UI screens expect richer order/customer fields than current API list responses provide.
 
-6) Environment example mismatch
+5) Environment example mismatch
    - front-end .env.example points to port 3000
    - Backend default API runs on port 8000

@@ -6,7 +6,6 @@ import {
   ScrollView,
   Alert,
   Linking,
-  Platform,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,8 +24,10 @@ type PaymentNavigationProp = StackNavigationProp<RootStackParamList, 'Payment'>;
 /**
  * Payment Screen
  * Handles PayPal payment integration
- * Note: In a real app, you would use react-native-paypal SDK
- * This is a simplified version showing the flow
+ * PayPal payment flow:
+ * 1) Create order on backend
+ * 2) Open PayPal approval URL
+ * 3) Capture approved order on backend
  */
 const PaymentScreen: React.FC = () => {
   const route = useRoute<PaymentRouteProp>();
@@ -42,25 +43,33 @@ const PaymentScreen: React.FC = () => {
 
       // Initialize PayPal payment
       const paymentData = await PaymentService.initiatePayment({
-        orderId: route.params.orderId,
+        orderId: order.id,
         amount: cart.totalAmount,
         currency: 'USD',
       });
 
-      // Find approval URL in links
-      const approvalLink = paymentData.links.find((link: any) => link.rel === 'approve');
-      
+      const approvalLink = paymentData.links?.find((link: any) => link.rel === 'approve');
       if (!approvalLink) {
         throw new Error('Approval link not found in PayPal response');
       }
 
-      // In a real app, you would open PayPal SDK here
-      if (Platform.OS === 'web') {
-        await Linking.openURL(approvalLink.href);
-      } else {
-        // On mobile, use PayPal SDK or simulation
-        await simulatePayPalApproval(paymentData.id);
-      }
+      await Linking.openURL(approvalLink.href);
+
+      Alert.alert(
+        'Complete PayPal Approval',
+        'After approving payment in the browser, tap "I Approved Payment" to capture it.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setProcessing(false),
+          },
+          {
+            text: 'I Approved Payment',
+            onPress: () => executePayment(paymentData.id),
+          },
+        ]
+      );
 
     } catch (error: any) {
       Alert.alert('Payment Failed', error.message || ERROR_MESSAGES.PAYMENT_FAILED);
@@ -68,39 +77,15 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
-  const simulatePayPalApproval = async (paymentId: string) => {
-    // Simulate user approval
-    Alert.alert(
-      'PayPal Payment',
-      'In a real app, PayPal SDK would handle this. Proceed with payment?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setProcessing(false),
-        },
-        {
-          text: 'Pay',
-          onPress: () => executePayment(paymentId, 'simulated-payer-id'),
-        },
-      ]
-    );
-  };
-
-  const executePayment = async (paypalOrderId: string, payerId: string) => {
+  const executePayment = async (paymentId: string) => {
     try {
       // Execute the payment
       const paymentResponse = await PaymentService.executePayment(
         route.params.orderId,
-        paypalOrderId
+        paymentId
       );
 
-      if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED') {
-        // Update order status
-        await OrderService.updateOrderStatus(
-          route.params.orderId,
-          'COMPLETED' as any
-        );
+      if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED' || paymentResponse.success) {
 
         // Clear cart
         clearCart();
@@ -115,10 +100,7 @@ const PaymentScreen: React.FC = () => {
               onPress: () => {
                 navigation.reset({
                   index: 0,
-                  routes: [
-                    { name: 'Main' },
-                    { name: 'OrderConfirmation', params: { orderId: route.params.orderId } } as any,
-                  ],
+                  routes: [{ name: 'Main' as never } as any],
                 });
               },
             },

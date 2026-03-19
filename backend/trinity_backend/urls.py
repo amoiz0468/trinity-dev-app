@@ -19,12 +19,20 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from users.views import CustomerViewSet, RegisterView, CurrentUserView
+from users.views import CustomerViewSet, RegisterView, CurrentUserView, CustomTokenObtainPairView
 from products.views import CategoryViewSet, ProductViewSet
-from invoices.views import InvoiceViewSet, InvoiceItemViewSet, CartViewSet, PayPalWebhookView
+from invoices.views import (
+    InvoiceViewSet,
+    InvoiceItemViewSet,
+    CartViewSet,
+    PayPalWebhookView,
+    PaymentVerifyView,
+    PaymentProcessView,
+    PaymentRefundView,
+)
 from reports.views import (
     ReportsView,
     SalesReportView,
@@ -53,11 +61,17 @@ urlpatterns = [
     path('api/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc-ui'),
     
     # JWT Authentication
-    path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/register/', RegisterView.as_view(), name='auth_register'),
     path('api/auth/me/', CurrentUserView.as_view(), name='auth_me'),
     path('api/paypal/webhook/', PayPalWebhookView.as_view(), name='paypal-webhook'),
+    path('api/payments/verify/<str:transaction_id>', PaymentVerifyView.as_view(), name='payments-verify'),
+    path('api/payments/verify/<str:transaction_id>/', PaymentVerifyView.as_view(), name='payments-verify-slash'),
+    path('api/payments/process', PaymentProcessView.as_view(), name='payments-process'),
+    path('api/payments/process/', PaymentProcessView.as_view(), name='payments-process-slash'),
+    path('api/payments/refund', PaymentRefundView.as_view(), name='payments-refund'),
+    path('api/payments/refund/', PaymentRefundView.as_view(), name='payments-refund-slash'),
     
     # Reports
     path('api/reports/', ReportsView.as_view(), name='reports'),

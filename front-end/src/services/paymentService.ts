@@ -1,6 +1,5 @@
-import { PAYPAL_CONFIG } from '../constants';
 import apiClient from './apiClient';
-import { PaymentRequest, PaymentResponse, ApiResponse } from '../types';
+import { PaymentResponse, ApiResponse } from '../types';
 
 /**
  * Payment Service
@@ -10,7 +9,11 @@ class PaymentService {
   /**
    * Initialize PayPal payment
    */
-  async initiatePayment(params: { orderId: string; amount: number; currency: string }): Promise<{ id: string; status: string; links: any[] }> {
+  async initiatePayment(params: {
+    orderId: string;
+    amount: number;
+    currency: string;
+  }): Promise<{ id: string; status: string; links: any[] }> {
     try {
       const response = await apiClient.post<any>(
         `/invoices/${params.orderId}/create_paypal_order/`
@@ -24,16 +27,11 @@ class PaymentService {
   /**
    * Execute PayPal payment after approval
    */
-  async executePayment(
-    orderId: string,
-    paypalOrderId: string
-  ): Promise<any> {
+  async executePayment(orderId: string, paypalOrderId: string): Promise<any> {
     try {
       const response = await apiClient.post<any>(
         `/invoices/${orderId}/capture_paypal_order/`,
-        {
-          order_id: paypalOrderId,
-        }
+        { order_id: paypalOrderId }
       );
       return response;
     } catch (error: any) {

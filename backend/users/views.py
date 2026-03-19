@@ -5,13 +5,15 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from django.db.models import Sum, Count, Avg
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Customer
 from .serializers import (
     CustomerSerializer,
     CustomerCreateSerializer,
     CustomerPurchaseHistorySerializer,
     CustomerRegistrationSerializer,
-    UserSerializer
+    UserSerializer,
+    EmailOrUsernameTokenObtainPairSerializer,
 )
 
 
@@ -157,3 +159,10 @@ class CurrentUserView(APIView):
             request.user.username = serializer.validated_data['email']
             request.user.save(update_fields=['email', 'username'])
         return Response(CustomerSerializer(customer).data)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    JWT login endpoint supporting email or username.
+    """
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer

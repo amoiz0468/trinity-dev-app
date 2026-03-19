@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Svg, { Path, Rect, Circle, G, Line, LinearGradient, Stop, Defs, Text as SvgText } from 'react-native-svg';
@@ -39,26 +39,38 @@ type TabType = 'orders' | 'reports' | 'customers' | 'products';
 
 const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) => {
     const chartHeight = 150;
-    const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    
-    if (!data || data.length === 0) return null;
+    const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4); // Adjusted for margin + padding
+    const safeData = data.filter((d) => Number.isFinite(d.amount));
 
-    const maxVal = Math.max(...data.map(d => d.amount), 0.01);
-    const points = data.map((d, i) => {
-        const xCoord = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
-        return {
-            x: xCoord,
-            y: chartHeight - (d.amount / maxVal) * chartHeight
-        };
-    });
+    if (safeData.length === 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Revenue Trend (7 Days)</Text>
+                <Text style={styles.emptyChartText}>No revenue data available</Text>
+            </View>
+        );
+    }
 
-    const pathData = data.length > 1 
-        ? `M 0 ${chartHeight} ` + points.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartWidth} ${chartHeight} Z`
-        : `M ${points[0].x} ${chartHeight} L ${points[0].x} ${points[0].y} Z`;
-    
-    const lineData = data.length > 1
-        ? points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ')
-        : '';
+    const maxBase = Math.max(...safeData.map(d => d.amount), 1);
+    const maxVal = maxBase * 1.2;
+    const denominator = safeData.length > 1 ? safeData.length - 1 : 1;
+    const points = safeData.map((d, i) => ({
+        x: (i / denominator) * chartWidth,
+        y: chartHeight - (d.amount / maxVal) * chartHeight
+    }));
+    const validPoints = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+    if (validPoints.length === 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Revenue Trend (7 Days)</Text>
+                <Text style={styles.emptyChartText}>No revenue data available</Text>
+            </View>
+        );
+    }
+
+    const pathData = `M 0 ${chartHeight} ` + validPoints.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartWidth} ${chartHeight} Z`;
+    const lineData = validPoints.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
 
     return (
         <View style={styles.chartWrapper}>
@@ -72,7 +84,7 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
                 </Defs>
                 <Path d={pathData} fill="url(#grad)" />
                 <Path d={lineData} fill="none" stroke={COLORS.primary} strokeWidth="3" />
-                {points.map((p, i) => (
+                {validPoints.map((p, i) => (
                     <Circle key={i} cx={p.x} cy={p.y} r="4" fill={COLORS.primary} />
                 ))}
             </Svg>
@@ -83,20 +95,33 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
 const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = ({ data }) => {
     const chartHeight = 120;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    
-    if (!data || data.length === 0) return null;
+    const safeData = data.filter((d) => Number.isFinite(d.count));
 
-    const maxVal = Math.max(...data.map(d => d.count), 0.01) * 1.2;
+    if (safeData.length === 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Orders by Status</Text>
+                <Text style={styles.emptyChartText}>No order status data available</Text>
+            </View>
+        );
+    }
+
+    const maxVal = Math.max(...safeData.map(d => d.count), 1) * 1.2;
     const barWidth = 40;
-    const gap = data.length > 1 ? (chartWidth - (data.length * barWidth)) / (data.length - 1) : 0;
+    const gap = safeData.length > 1
+        ? (chartWidth - (safeData.length * barWidth)) / (safeData.length - 1)
+        : 0;
 
     return (
         <View style={styles.chartWrapper}>
             <Text style={styles.chartTitle}>Orders by Status</Text>
             <Svg height={chartHeight + 30} width={chartWidth}>
-                {data.map((d, i) => {
+                {safeData.map((d, i) => {
                     const h = (d.count / maxVal) * chartHeight;
-                    const x = data.length > 1 ? i * (barWidth + gap) : (chartWidth - barWidth) / 2;
+                    const x = i * (barWidth + gap);
+                    if (!Number.isFinite(h) || !Number.isFinite(x)) {
+                        return null;
+                    }
                     return (
                         <G key={i}>
                             <Rect
@@ -128,32 +153,45 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
 const CustomerLineChart: React.FC<{ data: { count: number }[] }> = ({ data }) => {
     const chartHeight = 100;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
+    const safeData = data.filter((d) => Number.isFinite(d.count));
 
-    if (!data || data.length === 0) return null;
+    if (safeData.length === 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Customer Growth</Text>
+                <Text style={styles.emptyChartText}>No customer growth data available</Text>
+            </View>
+        );
+    }
 
-    const maxVal = Math.max(...data.map(d => d.count), 0.01) * 1.1;
-    const minVal = Math.min(...data.map(d => d.count), 0);
+    const maxVal = Math.max(...safeData.map(d => d.count), 1) * 1.1;
+    const minVal = Math.min(...safeData.map(d => d.count), 0) * 0.9;
+    const range = maxVal - minVal > 0 ? maxVal - minVal : 1;
+    const denominator = safeData.length > 1 ? safeData.length - 1 : 1;
 
-    const points = data.map((d, i) => {
-        const xCoord = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
-        const den = maxVal - minVal;
-        const yCoord = den > 0 ? chartHeight - ((d.count - minVal) / den) * chartHeight : chartHeight / 2;
-        return {
-            x: xCoord,
-            y: yCoord
-        };
-    });
+    const points = safeData.map((d, i) => ({
+        x: (i / denominator) * chartWidth,
+        y: chartHeight - ((d.count - minVal) / range) * chartHeight
+    }));
+    const validPoints = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
 
-    const lineData = data.length > 1
-        ? points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ')
-        : '';
+    if (validPoints.length === 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Customer Growth</Text>
+                <Text style={styles.emptyChartText}>No customer growth data available</Text>
+            </View>
+        );
+    }
+
+    const lineData = validPoints.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
 
     return (
         <View style={styles.chartWrapper}>
             <Text style={styles.chartTitle}>Customer Growth</Text>
             <Svg height={chartHeight} width={chartWidth}>
                 <Path d={lineData} fill="none" stroke={COLORS.secondary} strokeWidth="3" />
-                {points.map((p, i) => (
+                {validPoints.map((p, i) => (
                     <Circle key={i} cx={p.x} cy={p.y} r="3" fill={COLORS.secondary} />
                 ))}
             </Svg>
@@ -359,7 +397,6 @@ const AdminDashboardScreen: React.FC = () => {
                         try {
                             await logout();
                             await clearCart();
-                            navigation.replace('Login');
                         } catch (error: any) {
                             Alert.alert('Error', error.message || 'Failed to logout');
                         }

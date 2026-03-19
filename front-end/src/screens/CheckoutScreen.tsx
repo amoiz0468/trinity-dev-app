@@ -88,6 +88,9 @@ const CheckoutScreen: React.FC = () => {
     try {
       // Create order
       const order = await OrderService.createOrder(cart.items, billingInfo);
+      if (!order?.id) {
+        throw new Error('Order created but invalid order id was returned');
+      }
 
       // Navigate to payment screen
       navigation.navigate('Payment', { orderId: order.id });

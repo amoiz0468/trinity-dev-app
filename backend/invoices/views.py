@@ -32,6 +32,57 @@ def get_paypal_access_token():
     return response.json().get('access_token')
 
 
+def build_paypal_error_response(exc: RequestException, fallback_message: str):
+    response = getattr(exc, 'response', None)
+    if response is None:
+        return Response(
+            {'detail': f'{fallback_message}: {str(exc)}'},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    raw_status = response.status_code
+    if raw_status in (400, 404, 409, 422):
+        status_code = raw_status
+    elif raw_status in (401, 403):
+        # Avoid colliding with app-auth 401 handling on frontend.
+        status_code = status.HTTP_502_BAD_GATEWAY
+    elif 400 <= raw_status < 500:
+        status_code = status.HTTP_400_BAD_REQUEST
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    detail = None
+    paypal_payload = None
+
+    try:
+        payload = response.json()
+        if isinstance(payload, dict):
+            details = payload.get('details') or []
+            first_detail = details[0] if isinstance(details, list) and details else {}
+            issue = first_detail.get('issue') if isinstance(first_detail, dict) else None
+            description = first_detail.get('description') if isinstance(first_detail, dict) else None
+            message = payload.get('message') or payload.get('error_description') or payload.get('error')
+            detail = description or message or issue
+            paypal_payload = {
+                'name': payload.get('name'),
+                'message': payload.get('message'),
+                'issue': issue,
+                'description': description,
+                'debug_id': payload.get('debug_id'),
+            }
+    except ValueError:
+        body = (response.text or '').strip()
+        detail = body[:500] if body else None
+
+    return Response(
+        {
+            'detail': detail or f'{fallback_message}.',
+            'paypal_status': raw_status,
+            'paypal': paypal_payload,
+        },
+        status=status_code,
+    )
+
+
 class InvoiceViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Invoice management.
@@ -48,7 +99,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     - Search by invoice number or customer name
     - Sort by creation date or total amount
     
-    **Status Options:** pending, paid, cancelled, refunded
+    **Status Options:** pending, processing, paid, cancelled, refunded
     **Payment Methods:** cash, card, paypal, other
     """
     queryset = Invoice.objects.all()
@@ -86,9 +137,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         invoice = serializer.save()
-        
-        # Use full serializer for the response to ensure ID and items are included
-        response_serializer = InvoiceSerializer(invoice)
+
+        if not request.user.is_staff and invoice.payment_method in ['card', 'cash', 'other']:
+            invoice.status = 'paid'
+            invoice.paid_at = timezone.now()
+            invoice.save(update_fields=['status', 'paid_at'])
+        # Return full invoice payload (with `id`) for frontend order/payment flow.
+        response_serializer = InvoiceSerializer(
+            invoice,
+            context=self.get_serializer_context()
+        )
         headers = self.get_success_headers(response_serializer.data)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -111,6 +169,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def _to_frontend_status(self, backend_status):
         status_map = {
             'pending': 'PENDING',
+            'processing': 'PROCESSING',
             'paid': 'COMPLETED',
             'cancelled': 'CANCELLED',
             'refunded': 'CANCELLED',
@@ -121,7 +180,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         raw_status = str(incoming_status or '').strip().lower()
         status_map = {
             'pending': 'pending',
-            'processing': 'pending',
+            'processing': 'processing',
             'completed': 'paid',
             'paid': 'paid',
             'cancelled': 'cancelled',
@@ -218,7 +277,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             invoice.paid_at = timezone.now()
             invoice.payment_method = invoice.payment_method or 'paypal'
             invoice.save(update_fields=['status', 'paid_at', 'payment_method'])
-        elif backend_status in ['pending', 'cancelled']:
+        elif backend_status in ['pending', 'processing', 'cancelled']:
             invoice.paid_at = None
             invoice.save(update_fields=['status', 'paid_at'])
         else:
@@ -231,7 +290,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         """
         Cancel invoice.
-        - pending -> cancelled
+        - pending/processing -> cancelled
         - paid -> refunded
         """
         invoice = self.get_object()
@@ -325,7 +384,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
             return Response(data, status=status.HTTP_200_OK)
         except RequestException as exc:
-            return Response({'detail': f'PayPal request failed: {str(exc)}'}, status=status.HTTP_502_BAD_GATEWAY)
+            return build_paypal_error_response(exc, 'PayPal order creation failed')
 
     @action(detail=True, methods=['post'])
     def capture_paypal_order(self, request, pk=None):
@@ -354,7 +413,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
             return Response(data, status=status.HTTP_200_OK)
         except RequestException as exc:
-            return Response({'detail': f'PayPal request failed: {str(exc)}'}, status=status.HTTP_502_BAD_GATEWAY)
+            return build_paypal_error_response(exc, 'PayPal order capture failed')
 
 
 class InvoiceItemViewSet(viewsets.ReadOnlyModelViewSet):
@@ -481,6 +540,180 @@ class CartViewSet(viewsets.ViewSet):
             return Response({'detail': 'Customer profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
         CartItem.objects.filter(cart__customer=customer).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PaymentBaseAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_customer(self, request):
+        return Customer.objects.filter(user=request.user).first()
+
+    def _invoice_queryset_for_request(self, request):
+        if request.user.is_staff:
+            return Invoice.objects.select_related('customer')
+        customer = self._get_customer(request)
+        if not customer:
+            return Invoice.objects.none()
+        return Invoice.objects.select_related('customer').filter(customer=customer)
+
+    def _api_success(self, data=None, message=None):
+        payload = {'success': True}
+        if data is not None:
+            payload['data'] = data
+        if message:
+            payload['message'] = message
+        return payload
+
+    def _api_error(self, error, message=None):
+        payload = {'success': False, 'error': error}
+        if message:
+            payload['message'] = message
+        return payload
+
+
+class PaymentVerifyView(PaymentBaseAPIView):
+    """
+    Verify a payment transaction by transaction id.
+    """
+    def get(self, request, transaction_id):
+        invoice = self._invoice_queryset_for_request(request).filter(
+            paypal_transaction_id=transaction_id
+        ).first()
+        if not invoice:
+            return Response(
+                self._api_error('Transaction not found'),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        verified = invoice.status == 'paid'
+        return Response(self._api_success({
+            'verified': verified,
+            'transactionId': transaction_id,
+            'invoiceId': str(invoice.id),
+            'status': invoice.status,
+            'paidAt': invoice.paid_at.isoformat() if invoice.paid_at else None,
+        }))
+
+
+class PaymentProcessView(PaymentBaseAPIView):
+    """
+    Process a direct payment for an order/invoice.
+    """
+    def post(self, request):
+        order_id = request.data.get('orderId')
+        if not order_id:
+            return Response(
+                self._api_error('orderId is required'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        invoice = self._invoice_queryset_for_request(request).filter(id=order_id).first()
+        if not invoice:
+            return Response(
+                self._api_error('Order not found'),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Keep process endpoint idempotent for already-settled payments
+        if invoice.status == 'paid':
+            existing_tx = invoice.paypal_transaction_id or f"INV-{invoice.id}"
+            return Response(self._api_success({
+                'success': True,
+                'transactionId': existing_tx,
+                'message': 'Payment already processed',
+                'invoiceId': str(invoice.id),
+            }))
+
+        payment_method = str(request.data.get('paymentMethod') or 'other').lower()
+        if payment_method not in ['cash', 'card', 'paypal', 'other']:
+            payment_method = 'other'
+
+        payment_details = request.data.get('paymentDetails') or {}
+        transaction_id = (
+            payment_details.get('transactionId')
+            or payment_details.get('order_id')
+            or payment_details.get('orderId')
+            or f"PAY-{invoice.id}-{int(timezone.now().timestamp())}"
+        )
+
+        payer_email = payment_details.get('payerEmail') or payment_details.get('email')
+        update_fields = ['status', 'payment_method', 'paid_at']
+        invoice.status = 'paid'
+        invoice.payment_method = payment_method
+        invoice.paid_at = timezone.now()
+
+        if transaction_id:
+            invoice.paypal_transaction_id = str(transaction_id)
+            update_fields.append('paypal_transaction_id')
+        if payer_email:
+            invoice.paypal_payer_email = payer_email
+            update_fields.append('paypal_payer_email')
+
+        invoice.save(update_fields=update_fields)
+
+        return Response(self._api_success({
+            'success': True,
+            'transactionId': invoice.paypal_transaction_id or transaction_id,
+            'message': 'Payment processed successfully',
+            'invoiceId': str(invoice.id),
+        }))
+
+
+class PaymentRefundView(PaymentBaseAPIView):
+    """
+    Refund a payment transaction.
+    """
+    def post(self, request):
+        transaction_id = request.data.get('transactionId')
+        amount = request.data.get('amount')
+        reason = request.data.get('reason', '')
+
+        if not transaction_id:
+            return Response(
+                self._api_error('transactionId is required'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        invoice = self._invoice_queryset_for_request(request).filter(
+            paypal_transaction_id=transaction_id
+        ).first()
+        if not invoice:
+            return Response(
+                self._api_error('Transaction not found'),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if invoice.status == 'refunded':
+            return Response(self._api_success({
+                'success': True,
+                'refundId': f"RFND-{invoice.id}",
+                'message': 'Refund already processed',
+                'invoiceId': str(invoice.id),
+            }))
+
+        if invoice.status not in ['paid', 'pending']:
+            return Response(
+                self._api_error('Invoice cannot be refunded in current status'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Keep an audit trail in notes until a dedicated refunds model exists.
+        note_parts = [f"Refund requested at {timezone.now().isoformat()}"]
+        if amount is not None:
+            note_parts.append(f"amount={amount}")
+        if reason:
+            note_parts.append(f"reason={reason}")
+        invoice.notes = (invoice.notes + "\n" if invoice.notes else "") + " | ".join(note_parts)
+
+        invoice.status = 'refunded' if invoice.status == 'paid' else 'cancelled'
+        invoice.save(update_fields=['status', 'notes'])
+
+        return Response(self._api_success({
+            'success': True,
+            'refundId': f"RFND-{invoice.id}-{int(timezone.now().timestamp())}",
+            'message': 'Refund processed successfully',
+            'invoiceId': str(invoice.id),
+        }))
 
 
 class PayPalWebhookView(APIView):

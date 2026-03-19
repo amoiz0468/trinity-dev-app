@@ -69,7 +69,6 @@ const HomeScreen: React.FC = () => {
             try {
               await logout();
               await clearCart();
-              navigation.navigate('Login' as never);
             } catch (error: any) {
               Alert.alert('Error', error.message || 'Failed to logout');
             }

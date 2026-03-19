@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Customer
 
 
@@ -93,6 +94,8 @@ class CustomerRegistrationSerializer(serializers.Serializer):
                 password=validated_data['password'],
                 first_name=validated_data['first_name'],
                 last_name=validated_data['last_name'],
+                is_staff=False,
+                is_superuser=False,
             )
             customer = Customer.objects.create(
                 user=user,
@@ -106,3 +109,17 @@ class CustomerRegistrationSerializer(serializers.Serializer):
                 country=validated_data['country'],
             )
         return customer
+
+
+class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Allow JWT login with either username or email in the `username` field.
+    """
+
+    def validate(self, attrs):
+        identifier = attrs.get(self.username_field)
+        if identifier and '@' in str(identifier):
+            user = User.objects.filter(email__iexact=str(identifier).strip()).first()
+            if user:
+                attrs[self.username_field] = user.get_username()
+        return super().validate(attrs)

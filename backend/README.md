@@ -27,8 +27,8 @@ pip install -r requirements.txt
 
 ### 3. Configure Environment
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+# Project uses root .env at: ../.env
+# Ensure DEBUG=True for local development.
 ```
 
 ### 4. Database Setup
@@ -44,10 +44,11 @@ python manage.py createsuperuser
 
 ### 6. Run Development Server
 ```bash
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
 
 The API will be available at `http://localhost:8000/api/`
+For mobile testing on same Wi-Fi, use `http://<YOUR_PC_IP>:8000/api/`
 
 ## API Endpoints
 
