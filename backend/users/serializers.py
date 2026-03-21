@@ -21,6 +21,9 @@ class CustomerSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     full_address = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
+    order_count = serializers.IntegerField(read_only=True)
+    total_spent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    last_order_date = serializers.DateTimeField(read_only=True, allow_null=True)
     
     class Meta:
         model = Customer
@@ -28,7 +31,8 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'user', 'first_name', 'last_name', 'phone_number', 'email',
             'address', 'zip_code', 'city', 'country',
             'is_active', 'created_at', 'updated_at',
-            'full_name', 'full_address'
+            'full_name', 'full_address',
+            'order_count', 'total_spent', 'last_order_date'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

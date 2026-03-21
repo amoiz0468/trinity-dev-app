@@ -34,6 +34,8 @@ const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<PaymentNavigationProp>();
   const { cart, clearCart } = useCart();
   const [processing, setProcessing] = useState(false);
+  const [pendingPayPalOrderId, setPendingPayPalOrderId] = useState<string | null>(null);
+  const [pendingApprovalUrl, setPendingApprovalUrl] = useState<string | null>(null);
 
   const handlePayPalPayment = async () => {
     setProcessing(true);
@@ -48,27 +50,32 @@ const PaymentScreen: React.FC = () => {
         currency: 'USD',
       });
 
-      const approvalLink = paymentData.links?.find((link: any) => link.rel === 'approve');
-      if (!approvalLink) {
-        throw new Error('Approval link not found in PayPal response');
+      const links = Array.isArray(paymentData.links) ? paymentData.links : [];
+      const approvalLink = links.find((link: any) =>
+        ['approve', 'payer-action'].includes(String(link?.rel || '').toLowerCase())
+      );
+      const approvalUrl =
+        approvalLink?.href ||
+        paymentData.approval_url ||
+        paymentData.approve_url ||
+        (paymentData?.id
+          ? `https://www.sandbox.paypal.com/checkoutnow?token=${paymentData.id}`
+          : null) ||
+        null;
+
+      if (!approvalUrl) {
+        const statusHint = paymentData?.status ? ` (status: ${paymentData.status})` : '';
+        throw new Error(`Approval link not found in PayPal response${statusHint}`);
       }
 
-      await Linking.openURL(approvalLink.href);
+      setPendingPayPalOrderId(paymentData.id);
+      setPendingApprovalUrl(approvalUrl);
+      setProcessing(false);
+      await Linking.openURL(approvalUrl);
 
       Alert.alert(
         'Complete PayPal Approval',
-        'After approving payment in the browser, tap "I Approved Payment" to capture it.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => setProcessing(false),
-          },
-          {
-            text: 'I Approved Payment',
-            onPress: () => executePayment(paymentData.id),
-          },
-        ]
+        'After approving payment in the browser, return to the app and tap "I Approved Payment".'
       );
 
     } catch (error: any) {
@@ -78,6 +85,7 @@ const PaymentScreen: React.FC = () => {
   };
 
   const executePayment = async (paymentId: string) => {
+    setProcessing(true);
     try {
       // Execute the payment
       const paymentResponse = await PaymentService.executePayment(
@@ -89,6 +97,8 @@ const PaymentScreen: React.FC = () => {
 
         // Clear cart
         clearCart();
+        setPendingPayPalOrderId(null);
+        setPendingApprovalUrl(null);
 
         // Show success message
         Alert.alert(
@@ -154,6 +164,36 @@ const PaymentScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
+        {pendingPayPalOrderId ? (
+          <>
+            <Button
+              title="I Approved Payment"
+              onPress={() => executePayment(pendingPayPalOrderId)}
+              loading={processing}
+              fullWidth
+              size="large"
+              style={styles.payButton}
+            />
+            <Button
+              title="Reopen PayPal"
+              onPress={() => pendingApprovalUrl && Linking.openURL(pendingApprovalUrl)}
+              variant="outline"
+              fullWidth
+              disabled={processing || !pendingApprovalUrl}
+              style={styles.payButton}
+            />
+            <Button
+              title="Cancel PayPal Flow"
+              onPress={() => {
+                setPendingPayPalOrderId(null);
+                setPendingApprovalUrl(null);
+              }}
+              variant="outline"
+              fullWidth
+              disabled={processing}
+            />
+          </>
+        ) : (
         <Button
           title="Pay with PayPal"
           onPress={handlePayPalPayment}
@@ -162,6 +202,7 @@ const PaymentScreen: React.FC = () => {
           size="large"
           style={styles.payButton}
         />
+        )}
 
         <Button
           title="Cancel"

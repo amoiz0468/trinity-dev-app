@@ -35,6 +35,35 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type TabType = 'orders' | 'reports' | 'customers' | 'products';
 
+const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; order: number }> = {
+    pending: { label: 'Pending', color: '#F59E0B', order: 0 },
+    processing: { label: 'Processing', color: '#8B5CF6', order: 1 },
+    paid: { label: 'Paid', color: '#10B981', order: 2 },
+    cancelled: { label: 'Cancelled', color: '#EF4444', order: 3 },
+    refunded: { label: 'Refunded', color: '#6B7280', order: 4 },
+};
+
+const formatOrderStatusLabel = (status: string): string => {
+    const key = status?.toLowerCase?.() || '';
+    return ORDER_STATUS_CONFIG[key]?.label || status || 'Unknown';
+};
+
+const getOrderStatusColor = (status: string): string => {
+    const key = status?.toLowerCase?.() || '';
+    return ORDER_STATUS_CONFIG[key]?.color || COLORS.primary;
+};
+
+const getOrderStatusOrder = (status: string): number => {
+    const key = status?.toLowerCase?.() || '';
+    return ORDER_STATUS_CONFIG[key]?.order ?? 99;
+};
+
+const formatShortDate = (value: string): string => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
 // --- Custom SVG Chart Components ---
 
 const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) => {
@@ -95,7 +124,9 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
 const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = ({ data }) => {
     const chartHeight = 120;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    const safeData = data.filter((d) => Number.isFinite(d.count));
+    const safeData = data
+        .filter((d) => Number.isFinite(d.count))
+        .sort((a, b) => getOrderStatusOrder(a.status) - getOrderStatusOrder(b.status));
 
     if (safeData.length === 0) {
         return (
@@ -107,15 +138,15 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
     }
 
     const maxVal = Math.max(...safeData.map(d => d.count), 1) * 1.2;
-    const barWidth = 40;
+    const barWidth = Math.min(52, Math.max(28, chartWidth / Math.max(safeData.length * 1.8, 1)));
     const gap = safeData.length > 1
-        ? (chartWidth - (safeData.length * barWidth)) / (safeData.length - 1)
+        ? Math.max(8, (chartWidth - (safeData.length * barWidth)) / (safeData.length - 1))
         : 0;
 
     return (
         <View style={styles.chartWrapper}>
             <Text style={styles.chartTitle}>Orders by Status</Text>
-            <Svg height={chartHeight + 30} width={chartWidth}>
+            <Svg height={chartHeight + 34} width={chartWidth}>
                 {safeData.map((d, i) => {
                     const h = (d.count / maxVal) * chartHeight;
                     const x = i * (barWidth + gap);
@@ -129,31 +160,43 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
                                 y={chartHeight - h}
                                 width={barWidth}
                                 height={h}
-                                fill={i % 2 === 0 ? COLORS.primary : COLORS.secondary}
+                                fill={getOrderStatusColor(d.status)}
                                 rx="6"
                             />
                             <SvgText
                                 x={x + barWidth / 2}
-                                y={chartHeight + 20}
-                                fill={COLORS.textSecondary}
-                                fontSize="10"
-                                fontWeight="600"
+                                y={Math.max(12, chartHeight - h - 6)}
+                                fill="#FFFFFF"
+                                fontSize="11"
+                                fontWeight="700"
                                 textAnchor="middle"
                             >
-                                {d.status.substring(0, 3)}
+                                {String(d.count)}
                             </SvgText>
                         </G>
                     );
                 })}
             </Svg>
+            <View style={styles.chartLegendContainer}>
+                {safeData.map((d, i) => (
+                    <View key={`${d.status}-${i}`} style={styles.chartLegendItem}>
+                        <View style={[styles.chartLegendDot, { backgroundColor: getOrderStatusColor(d.status) }]} />
+                        <Text style={styles.chartLegendText}>
+                            {formatOrderStatusLabel(d.status)}: {d.count}
+                        </Text>
+                    </View>
+                ))}
+            </View>
         </View>
     );
 };
 
-const CustomerLineChart: React.FC<{ data: { count: number }[] }> = ({ data }) => {
+const CustomerLineChart: React.FC<{ data: { date: string; count: number }[] }> = ({ data }) => {
     const chartHeight = 100;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
-    const safeData = data.filter((d) => Number.isFinite(d.count));
+    const safeData = data
+        .filter((d) => Number.isFinite(d.count) && !!d.date)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     if (safeData.length === 0) {
         return (
@@ -185,40 +228,75 @@ const CustomerLineChart: React.FC<{ data: { count: number }[] }> = ({ data }) =>
     }
 
     const lineData = validPoints.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+    const firstPoint = safeData[0];
+    const lastPoint = safeData[safeData.length - 1];
+    const growth = lastPoint.count - firstPoint.count;
+    const middlePoint = safeData[Math.floor((safeData.length - 1) / 2)];
 
     return (
         <View style={styles.chartWrapper}>
             <Text style={styles.chartTitle}>Customer Growth</Text>
+            <View style={styles.customerSummaryRow}>
+                <Text style={styles.customerSummaryText}>Start: {firstPoint.count}</Text>
+                <Text style={styles.customerSummaryText}>Now: {lastPoint.count}</Text>
+                <Text style={[styles.customerSummaryText, growth >= 0 ? styles.growthPositive : styles.growthNegative]}>
+                    {growth >= 0 ? '+' : ''}{growth}
+                </Text>
+            </View>
             <Svg height={chartHeight} width={chartWidth}>
+                <Line x1="0" y1={chartHeight * 0.25} x2={chartWidth} y2={chartHeight * 0.25} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                <Line x1="0" y1={chartHeight * 0.5} x2={chartWidth} y2={chartHeight * 0.5} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                <Line x1="0" y1={chartHeight * 0.75} x2={chartWidth} y2={chartHeight * 0.75} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
                 <Path d={lineData} fill="none" stroke={COLORS.secondary} strokeWidth="3" />
                 {validPoints.map((p, i) => (
                     <Circle key={i} cx={p.x} cy={p.y} r="3" fill={COLORS.secondary} />
                 ))}
             </Svg>
+            <View style={styles.chartAxisLabels}>
+                <Text style={styles.axisLabel}>{formatShortDate(firstPoint.date)}</Text>
+                <Text style={styles.axisLabel}>{formatShortDate(middlePoint.date)}</Text>
+                <Text style={styles.axisLabel}>{formatShortDate(lastPoint.date)}</Text>
+            </View>
         </View>
     );
 };
 
-const CategoryDistributionChart: React.FC = () => {
-    const data = [
-        { name: 'Produce', val: 85 },
-        { name: 'Dairy', val: 65 },
-        { name: 'Bakery', val: 45 },
-        { name: 'Meat', val: 30 }
-    ];
+const CategoryDistributionChart: React.FC<{ data: { categoryName: string; revenue: number; quantity: number }[] }> = ({ data }) => {
+    const safeData = data
+        .filter((item) => Number.isFinite(item.revenue) && item.revenue > 0)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 6);
+
+    const totalRevenue = safeData.reduce((sum, item) => sum + item.revenue, 0);
+
+    if (safeData.length === 0 || totalRevenue <= 0) {
+        return (
+            <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Category Performance</Text>
+                <Text style={styles.emptyChartText}>No category performance data available</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.chartWrapper}>
             <Text style={styles.chartTitle}>Category Performance</Text>
-            {data.map((item, i) => (
-                <View key={i} style={styles.barRow}>
-                    <Text style={styles.barRowLabel}>{item.name}</Text>
-                    <View style={styles.barBg}>
-                        <View style={[styles.barFill, { width: `${item.val}%`, backgroundColor: COLORS.accent }]} />
+            {safeData.map((item, i) => {
+                const percent = Math.round((item.revenue / totalRevenue) * 100);
+                const barColor = i % 2 === 0 ? COLORS.accent : COLORS.primary;
+                return (
+                <View key={i} style={styles.categoryItem}>
+                    <View style={styles.categoryHeaderRow}>
+                        <Text style={styles.categoryName}>{item.categoryName}</Text>
+                        <Text style={styles.categoryMeta}>{formatCurrency(item.revenue)} | {item.quantity} sold</Text>
                     </View>
-                    <Text style={styles.barVal}>{item.val}%</Text>
+                    <View style={styles.barBg}>
+                        <View style={[styles.barFill, { width: `${Math.max(percent, 3)}%`, backgroundColor: barColor }]} />
+                    </View>
+                    <Text style={styles.categoryPercent}>{percent}% of revenue</Text>
                 </View>
-            ))}
+                );
+            })}
         </View>
     );
 };
@@ -502,7 +580,7 @@ const AdminDashboardScreen: React.FC = () => {
                     <OrderBarChart data={reportData.orderStatusDistribution} />
                 </View>
                 <CustomerLineChart data={reportData.customerGrowth} />
-                <CategoryDistributionChart />
+                <CategoryDistributionChart data={reportData.categoryPerformance} />
 
                 <Text style={styles.sectionTitle}>Top Sellers</Text>
                 {reportData.topProducts.map((product, index) => (
@@ -896,6 +974,56 @@ const styles = StyleSheet.create({
     sideBySideCharts: {
         flexDirection: 'row',
     },
+    chartLegendContainer: {
+        marginTop: SPACING.md,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    chartLegendItem: {
+        width: '50%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    chartLegendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginRight: 8,
+    },
+    chartLegendText: {
+        color: COLORS.textSecondary,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    customerSummaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: SPACING.sm,
+    },
+    customerSummaryText: {
+        color: COLORS.textSecondary,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    growthPositive: {
+        color: '#10B981',
+        fontWeight: '700',
+    },
+    growthNegative: {
+        color: '#EF4444',
+        fontWeight: '700',
+    },
+    chartAxisLabels: {
+        marginTop: 6,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    axisLabel: {
+        color: COLORS.textSecondary,
+        fontSize: 11,
+        fontWeight: '500',
+    },
     barRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -925,6 +1053,40 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         textAlign: 'right',
+    },
+    categoryItem: {
+        marginBottom: SPACING.md,
+    },
+    categoryHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+        gap: 8,
+    },
+    categoryName: {
+        flex: 1,
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    categoryMeta: {
+        color: COLORS.textSecondary,
+        fontSize: 11,
+        fontWeight: '600',
+        flexShrink: 1,
+        textAlign: 'right',
+    },
+    categoryPercent: {
+        color: COLORS.textSecondary,
+        fontSize: 11,
+        marginTop: 4,
+        textAlign: 'right',
+    },
+    emptyChartText: {
+        color: COLORS.textSecondary,
+        fontSize: 13,
+        fontWeight: '500',
     },
     productItem: {
         flexDirection: 'row',

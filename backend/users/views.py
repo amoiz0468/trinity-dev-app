@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count, Avg
+from django.db.models import Sum, Count, Avg, Q, Max, DecimalField
+from django.db.models.functions import Coalesce
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Customer
 from .serializers import (
@@ -35,9 +36,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        annotated_queryset = Customer.objects.select_related('user').annotate(
+            order_count=Count('invoices', distinct=True),
+            total_spent=Coalesce(
+                Sum('invoices__total_amount', filter=Q(invoices__status='paid')),
+                0,
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            ),
+            last_order_date=Max('invoices__created_at'),
+        )
+
         if self.request.user.is_staff:
-            return Customer.objects.all()
-        return Customer.objects.filter(user=self.request.user)
+            return annotated_queryset
+        return annotated_queryset.filter(user=self.request.user)
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:

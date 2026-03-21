@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from django.utils import timezone
 from django.conf import settings
+from django.http import HttpResponse
 import requests
 from requests import RequestException
 from users.models import Customer
@@ -353,6 +354,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Invoice already paid.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             token = get_paypal_access_token()
+            return_url = request.build_absolute_uri("/api/paypal/return/")
+            cancel_url = request.build_absolute_uri("/api/paypal/cancel/")
             payload = {
                 "intent": "CAPTURE",
                 "purchase_units": [
@@ -361,21 +364,52 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                         "custom_id": str(invoice.id),
                         "amount": {
                             "currency_code": "EUR",
-                            "value": str(invoice.total_amount)
+                            "value": f"{invoice.total_amount:.2f}"
                         },
                         "description": f"Invoice {invoice.invoice_number}"
                     }
-                ]
+                ],
+                "payment_source": {
+                    "paypal": {
+                        "experience_context": {
+                            "landing_page": "LOGIN",
+                            "shipping_preference": "NO_SHIPPING",
+                            "user_action": "PAY_NOW",
+                            "return_url": return_url,
+                            "cancel_url": cancel_url,
+                        }
+                    }
+                },
             }
 
             response = requests.post(
                 f"{settings.PAYPAL_BASE_URL}/v2/checkout/orders",
                 json=payload,
-                headers={"Authorization": f"Bearer {token}"},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",
+                },
                 timeout=15,
             )
             response.raise_for_status()
             data = response.json()
+            links = data.get('links') or []
+            approval_link = next(
+                (
+                    link.get('href')
+                    for link in links
+                    if (link.get('rel') or '').lower() in ['approve', 'payer-action']
+                ),
+                ''
+            )
+            if not approval_link and data.get('id'):
+                checkout_host = 'https://www.sandbox.paypal.com'
+                if 'sandbox' not in (settings.PAYPAL_BASE_URL or '').lower():
+                    checkout_host = 'https://www.paypal.com'
+                approval_link = f"{checkout_host}/checkoutnow?token={data.get('id')}"
+            if approval_link:
+                data['approval_url'] = approval_link
 
             invoice.payment_method = 'paypal'
             invoice.status = 'pending'
@@ -394,11 +428,33 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'PayPal order id is required.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             token = get_paypal_access_token()
+            capture_url = f"{settings.PAYPAL_BASE_URL}/v2/checkout/orders/{order_id}/capture"
             response = requests.post(
-                f"{settings.PAYPAL_BASE_URL}/v2/checkout/orders/{order_id}/capture",
-                headers={"Authorization": f"Bearer {token}"},
+                capture_url,
+                json={},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",
+                },
                 timeout=15,
             )
+
+            # Sandbox sometimes rejects the explicit empty JSON payload.
+            # Retry with an empty body when that specific validation error occurs.
+            if (
+                response.status_code in (400, 422)
+                and 'payload is not supported' in (response.text or '').lower()
+            ):
+                response = requests.post(
+                    capture_url,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Prefer": "return=representation",
+                    },
+                    timeout=15,
+                )
+
             response.raise_for_status()
             data = response.json()
 
@@ -777,3 +833,42 @@ class PayPalWebhookView(APIView):
                 pass
 
         return Response({'status': 'ok'})
+
+
+class PayPalReturnView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        token = request.query_params.get('token', '')
+        payer_id = request.query_params.get('PayerID', '')
+        html = f"""
+        <!doctype html>
+        <html>
+          <head><meta charset="utf-8"><title>Payment Approved</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 24px;">
+            <h2>Payment approved on PayPal</h2>
+            <p>You can return to the app and tap <strong>I Approved Payment</strong>.</p>
+            <p style="color:#666; font-size: 12px;">token={token} payer={payer_id}</p>
+          </body>
+        </html>
+        """
+        return HttpResponse(html)
+
+
+class PayPalCancelView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        html = """
+        <!doctype html>
+        <html>
+          <head><meta charset="utf-8"><title>Payment Cancelled</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 24px;">
+            <h2>Payment cancelled on PayPal</h2>
+            <p>You can return to the app and try again.</p>
+          </body>
+        </html>
+        """
+        return HttpResponse(html)

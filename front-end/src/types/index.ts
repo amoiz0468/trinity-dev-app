@@ -149,6 +149,7 @@ export interface ReportData {
   topProducts: { productId: string; name: string; sales: number; revenue: number }[];
   orderStatusDistribution: { status: string; count: number }[];
   customerGrowth: { date: string; count: number }[];
+  categoryPerformance: { categoryName: string; revenue: number; quantity: number }[];
 }
 
 // Navigation Types

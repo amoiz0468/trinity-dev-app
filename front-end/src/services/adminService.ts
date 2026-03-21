@@ -11,6 +11,21 @@ import apiClient from './apiClient';
 import { toBackendInvoiceStatus, toFrontendOrderStatus } from '../utils/orderStatus';
 
 class AdminService {
+  private toTwoDecimals(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') {
+      return undefined;
+    }
+
+    const normalizedValue = typeof value === 'string' ? value.replace(',', '.').trim() : value;
+    const parsedValue = Number(normalizedValue);
+
+    if (!Number.isFinite(parsedValue)) {
+      return undefined;
+    }
+
+    return Math.round(parsedValue * 100) / 100;
+  }
+
   private mapOrder(invoice: any): Order {
     return {
       id: String(invoice.id || invoice.invoice_number || ''),
@@ -50,8 +65,9 @@ class AdminService {
       firstName: data.first_name || '',
       lastName: data.last_name || '',
       phone: data.phone_number || '',
-      totalOrders: Number(data.order_count || 0),
-      lifetimeValue: Number(data.total_spent || 0),
+      totalOrders: Number(data.order_count || data.total_orders || 0),
+      lifetimeValue: Number(data.total_spent || data.lifetime_value || 0),
+      lastOrderDate: data.last_order_date || data.lastOrderDate || undefined,
       createdAt: data.created_at || new Date().toISOString(),
     };
   }
@@ -92,7 +108,6 @@ class AdminService {
     const payload: any = {
       name: product.name,
       brand: product.brand,
-      price: product.price,
       description: product.description,
       barcode: product.barcode,
       picture_url: product.imageUrl,
@@ -100,14 +115,23 @@ class AdminService {
       is_active: true,
     };
 
+    const setDecimalField = (key: string, value: unknown): void => {
+      const roundedValue = this.toTwoDecimals(value);
+      if (roundedValue !== undefined) {
+        payload[key] = roundedValue;
+      }
+    };
+
+    setDecimalField('price', product.price);
+
     if (product.nutritionalInfo) {
-      payload.energy_kcal = product.nutritionalInfo.calories;
-      payload.proteins = product.nutritionalInfo.protein;
-      payload.carbohydrates = product.nutritionalInfo.carbohydrates;
-      payload.fat = product.nutritionalInfo.fat;
-      payload.fiber = product.nutritionalInfo.fiber;
-      payload.sugars = product.nutritionalInfo.sugar;
-      payload.salt = product.nutritionalInfo.sodium;
+      setDecimalField('energy_kcal', product.nutritionalInfo.calories);
+      setDecimalField('proteins', product.nutritionalInfo.protein);
+      setDecimalField('carbohydrates', product.nutritionalInfo.carbohydrates);
+      setDecimalField('fat', product.nutritionalInfo.fat);
+      setDecimalField('fiber', product.nutritionalInfo.fiber);
+      setDecimalField('sugars', product.nutritionalInfo.sugar);
+      setDecimalField('salt', product.nutritionalInfo.sodium);
     }
 
     if (typeof product.category === 'string') {
@@ -140,7 +164,7 @@ class AdminService {
         totalOrders: Number(kpis.total_orders || 0),
         activeCustomers: Number(kpis.total_customers || 0),
         averageOrderValue: Number(kpis.average_order_value || 0),
-        pendingOrders: findStatusCount('pending') + findStatusCount('processing'),
+        pendingOrders: findStatusCount('pending'),
         completedOrders: findStatusCount('paid'),
         cancelledOrders: findStatusCount('cancelled') + findStatusCount('refunded'),
         revenueGrowth: 0,
@@ -225,9 +249,14 @@ class AdminService {
           status: item.status || 'Unknown',
           count: Number(item.count || 0),
         })),
-        customerGrowth: (reportsResp.revenue_trend || []).map((item: any, index: number) => ({
+        customerGrowth: (reportsResp.customer_growth || []).map((item: any) => ({
           date: String(item.date || ''),
-          count: Math.floor(Math.random() * 5) + index * 2,
+          count: Number(item.count || 0),
+        })),
+        categoryPerformance: (reportsResp.category_performance || []).map((item: any) => ({
+          categoryName: item.category_name || item.product__category__name || 'Uncategorized',
+          revenue: Number(item.total_revenue || 0),
+          quantity: Number(item.total_quantity || 0),
         })),
       };
     } catch (error: any) {
