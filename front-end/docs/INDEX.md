@@ -20,8 +20,8 @@
 - **Storage**: Expo SecureStore, AsyncStorage
 
 ### Backend Integration
-- **HTTP Client**: Axios
-- **Authentication**: JWT (JSON Web Tokens)
+- **Framework**: Django + Django REST Framework
+- **Authentication**: JWT (SimpleJWT)
 - **API Architecture**: RESTful
 
 ### Features
@@ -59,10 +59,11 @@
 
 ## Architecture Highlights
 
-### MVVM Pattern
+### Context + Services Pattern
 - **Model**: Data types and business logic
 - **View**: React components and screens
-- **ViewModel**: Context providers and hooks
+- **State Controllers**: Context providers and hooks
+- **Services**: API/data access modules
 
 ### Security
 - Secure token storage
