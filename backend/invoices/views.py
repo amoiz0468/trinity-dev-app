@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from django.utils import timezone
+from decimal import Decimal
 from django.conf import settings
 from django.http import HttpResponse
 import requests
@@ -528,6 +529,13 @@ class CartViewSet(viewsets.ViewSet):
         if not customer:
             return Response({'detail': 'Customer profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
         cart = self._get_or_create_cart(customer)
+        for item in cart.items.select_related('product').all():
+            current_price = item.product.current_price
+            expected_total = current_price * Decimal(item.quantity)
+            if item.unit_price != current_price or item.total_price != expected_total:
+                item.unit_price = current_price
+                item.total_price = expected_total
+                item.save(update_fields=['unit_price', 'total_price'])
         return Response(CartSerializer(cart).data)
 
     @action(detail=False, methods=['post'])
