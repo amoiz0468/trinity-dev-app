@@ -172,7 +172,7 @@ class CartItem(models.Model):
         return f"{self.product.name} x {self.quantity}"
 
     def save(self, *args, **kwargs):
-        self.unit_price = self.unit_price or self.product.price
+        self.unit_price = self.unit_price or self.product.current_price
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
 
