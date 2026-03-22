@@ -45,4 +45,4 @@ class PromotionAdmin(admin.ModelAdmin):
     list_display = ['title', 'product', 'discount_percentage', 'start_date', 'end_date', 'is_active']
     list_filter = ['is_active', 'start_date', 'end_date']
     search_fields = ['title', 'description', 'product__name']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at']
