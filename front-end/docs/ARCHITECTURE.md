@@ -10,17 +10,27 @@
 
 ## Overview
 
-Trinity Mobile App is a React Native application built with TypeScript for both iOS and Android platforms. It follows the MVVM (Model-View-ViewModel) architecture pattern with React Context API for state management.
+Trinity Mobile App is a React Native application built with TypeScript for both iOS and Android platforms, backed by a Django REST API. The frontend uses a Context + Services architecture (Context providers for state, service modules for data access), while the backend follows a layered Django + DRF architecture (models, serializers, viewsets, services).
 
 ## Architecture Pattern
 
-### MVVM (Model-View-ViewModel)
+### Context + Services (Frontend)
 
-The application follows the MVVM pattern:
+The frontend follows a Context + Services pattern:
 
-- **Model**: Data models and business logic (`src/types`, `src/services`)
-- **View**: React Native components and screens (`src/screens`, `src/components`)
-- **ViewModel**: Context providers and hooks (`src/contexts`)
+- **Models**: TypeScript types (`src/types`)
+- **Views**: React Native components and screens (`src/screens`, `src/components`)
+- **State Controllers**: Context providers and hooks (`src/contexts`)
+- **Data Access**: Service modules (`src/services`)
+
+### Layered Django + DRF (Backend)
+
+The backend follows Django best practices:
+
+- **Models**: Domain entities (`products`, `invoices`, `users`)
+- **Serializers**: API representations + validation
+- **ViewSets / APIViews**: REST endpoints, permissions, workflows
+- **Signals/Utilities**: Cross-cutting behavior (e.g., notifications)
 
 ### Key Components
 
@@ -166,6 +176,24 @@ trinity-dev-app/
 - **User Preferences**: AsyncStorage (cart, user data)
 - **Remote Data**: RESTful API with JWT authentication
 
+### Promotions & Pricing Flow
+```
+1. Admin creates promotion (specific product or global)
+2. Backend stores Promotion and emits global Notification
+3. Product current_price calculated from active promotion(s)
+4. Cart list endpoint re-prices items using current_price
+5. Cart UI shows discounted unit prices and totals
+6. Order creation uses discounted unit_price when available
+```
+
+### Notifications Flow
+```
+1. Admin creates a promotion
+2. Backend writes Notification (user = null, type = promotion)
+3. User fetches /notifications (global + personal)
+4. Notification badge updates in UI
+```
+
 ## Security
 
 ### 1. Authentication
@@ -196,14 +224,12 @@ trinity-dev-app/
 
 ## Technology Stack
 
-- **Framework**: React Native with Expo
-- **Language**: TypeScript
-- **Navigation**: React Navigation (Stack & Bottom Tabs)
-- **State Management**: React Context API
+- **Frontend**: React Native (Expo), TypeScript, React Navigation, Context API
+- **Backend**: Django, Django REST Framework, SimpleJWT
 - **HTTP Client**: Axios
 - **Storage**: Expo SecureStore, AsyncStorage
 - **Camera**: Expo Camera & Barcode Scanner
-- **Testing**: Jest, React Native Testing Library
+- **Testing**: Jest (frontend), Pytest (backend)
 - **CI/CD**: GitHub Actions
 
 ## Scalability Considerations
