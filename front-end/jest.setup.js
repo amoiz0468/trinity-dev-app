@@ -14,3 +14,35 @@ jest.mock('react-native-safe-area-context', () => {
     useSafeAreaInsets: jest.fn().mockReturnValue(inset),
   };
 });
+
+// Mock @react-native-async-storage/async-storage
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+);
+
+// Mock ThemeContext/useTheme globally for component tests
+jest.mock('./src/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: {
+      primary: '#6366F1',
+      secondary: '#8B5CF6',
+      accent: '#F43F5E',
+      success: '#10B981',
+      warning: '#F59E0B',
+      error: '#EF4444',
+      background: '#0F172A',
+      surface: '#1E293B',
+      surfaceLight: '#334155',
+      text: '#F8FAFC',
+      textSecondary: '#94A3B8',
+      textMuted: '#64748B',
+      border: 'rgba(255, 255, 255, 0.1)',
+      disabled: '#1E293B',
+      placeholder: '#64748B',
+    },
+    isDark: true,
+    themeName: 'dark',
+    toggleTheme: jest.fn(),
+    setTheme: jest.fn(),
+  }),
+}));

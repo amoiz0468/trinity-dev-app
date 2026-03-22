@@ -19,6 +19,10 @@ from invoices.models import Invoice
 from users.models import Customer
 from products.models import Product
 import requests
+try:
+    import pytest
+except ImportError:
+    pytest = None
 
 
 def test_paypal_credentials():
@@ -59,6 +63,7 @@ def test_paypal_token():
         return False
 
 
+@pytest.mark.django_db if pytest else lambda f: f
 def test_paypal_order_creation():
     """Test creating a PayPal order."""
     print("\n3. Testing PayPal Order Creation...")
@@ -130,6 +135,7 @@ def test_paypal_order_creation():
         return False, None
 
 
+@pytest.mark.django_db if pytest else lambda f: f
 def test_paypal_order_details():
     """Test fetching PayPal order details."""
     print("\n4. Testing PayPal Order Details...")
