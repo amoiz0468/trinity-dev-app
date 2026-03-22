@@ -107,13 +107,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Copy docker-compose.prod.yml to EC2
+      - name: Copy docker-compose.prod.yml and .env to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/docker-compose.prod.yml"
+          source: |
+            backend/docker-compose.prod.yml
+            backend/.env
           target: ${{ secrets.DEPLOY_PATH }}
           strip_components: 1
 
@@ -125,10 +127,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            export GITHUB_REPOSITORY_OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-            docker-compose -f docker-compose.prod.yml build
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml up -d
+
+            docker-compose -f docker-compose.prod.yml up --build -d
+
+            # Run migrations
             docker-compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
+
+            # Collect static files
             docker-compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
