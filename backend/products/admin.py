@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product
+from .models import Category, Product, Promotion
 
 
 @admin.register(Category)
@@ -38,3 +38,11 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ['is_active', 'created_at', 'updated_at', 'last_synced']
         }),
     ]
+
+
+@admin.register(Promotion)
+class PromotionAdmin(admin.ModelAdmin):
+    list_display = ['title', 'product', 'discount_percentage', 'start_date', 'end_date', 'is_active']
+    list_filter = ['is_active', 'start_date', 'end_date']
+    search_fields = ['title', 'description', 'product__name']
+    readonly_fields = ['created_at', 'updated_at']

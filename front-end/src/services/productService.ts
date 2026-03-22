@@ -33,33 +33,6 @@ class ProductService {
   }
 
   /**
-   * Map backend product to frontend Product type
-   */
-  private mapProduct(data: any): Product {
-    return {
-      id: String(data.id || ''),
-      name: data.name || '',
-      barcode: data.barcode || '',
-      brand: data.brand || '',
-      category: data.category_name || data.category?.name || String(data.category || ''),
-      price: Number(data.price || 0),
-      stock: Number(data.quantity_in_stock || 0),
-      imageUrl: data.picture_url || data.picture || '',
-      description: data.description || '',
-      nutritionalInfo: {
-        calories: Number(data.energy_kcal || 0),
-        protein: Number(data.proteins || 0),
-        carbohydrates: Number(data.carbohydrates || 0),
-        fat: Number(data.fat || 0),
-        fiber: Number(data.fiber || 0),
-        sugar: Number(data.sugars || 0),
-        sodium: Number(data.salt || 0),
-        servingSize: '100g'
-      }
-    };
-  }
-
-  /**
    * Get product by barcode
    */
   async getProductByBarcode(barcode: string): Promise<Product> {
@@ -222,6 +195,25 @@ class ProductService {
     } catch (error: any) {
       console.error('Error checking stock:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get personalized product recommendations
+   */
+  async getRecommendations(): Promise<Product[]> {
+    try {
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise(resolve => setTimeout(resolve, 600));
+        return mockProducts.slice(0, 6);
+      }
+
+      const response = await apiClient.get<any>('/products/recommendations/');
+      const results = response.results || (Array.isArray(response) ? response : []);
+      return results.map((p: any) => this.mapProduct(p));
+    } catch (error: any) {
+      console.error('Error fetching recommendations:', error);
+      return [];
     }
   }
 }

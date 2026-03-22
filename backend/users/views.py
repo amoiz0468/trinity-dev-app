@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.db.models import Sum, Count, Avg, Q, Max, DecimalField, ProtectedError
 from django.db.models.functions import Coalesce
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import Customer
+from .models import Customer, Notification
 from .serializers import (
     CustomerSerializer,
     CustomerCreateSerializer,
@@ -15,6 +15,7 @@ from .serializers import (
     CustomerRegistrationSerializer,
     UserSerializer,
     EmailOrUsernameTokenObtainPairSerializer,
+    NotificationSerializer,
 )
 
 
@@ -226,3 +227,35 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     JWT login endpoint supporting email or username.
     """
     serializer_class = EmailOrUsernameTokenObtainPairSerializer
+
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for user notifications.
+    """
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Users see their own and global (user=null) notifications
+        # Admins see all
+        if self.request.user.is_staff:
+            return Notification.objects.all()
+        return Notification.objects.filter(
+            Q(user=self.request.user) | Q(user__isnull=True)
+        ).order_by('-created_at')
+
+    @action(detail=True, methods=['patch'])
+    def read(self, request, pk=None):
+        """Mark notification as read"""
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'notification marked as read'})
+
+    @action(detail=False, methods=['patch'])
+    def read_all(self, request):
+        """Mark all visible notifications as read"""
+        self.get_queryset().filter(is_read=False).update(is_read=True)
+        return Response({'status': 'all notifications marked as read'})

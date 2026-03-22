@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from .models import Category, Product
+from decimal import Decimal
+from .models import Category, Product, Promotion
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -43,19 +44,6 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.BooleanField())
     def get_is_in_stock(self, obj):
         return obj.is_in_stock
-    
-    class Meta:
-        model = Product
-        fields = [
-            'id', 'name', 'brand', 'price', 'category', 'category_name',
-            'picture', 'picture_url', 'quantity_in_stock',
-            'energy_kcal', 'fat', 'saturated_fat', 'carbohydrates',
-            'sugars', 'proteins', 'salt', 'fiber',
-            'description', 'barcode', 'openfoodfacts_id',
-            'last_synced', 'is_active', 'created_at', 'updated_at',
-            'stock_status', 'is_in_stock'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'last_synced']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -118,3 +106,18 @@ class ProductListSerializer(serializers.ModelSerializer):
             url = instance.picture.url
             data['picture_url'] = request.build_absolute_uri(url) if request else url
         return data
+
+
+class PromotionSerializer(serializers.ModelSerializer):
+    """Serializer for Promotion model"""
+    product_name = serializers.ReadOnlyField(source='product.name')
+    is_currently_active = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'title', 'description', 'image_url', 'product', 
+            'product_name', 'discount_percentage', 'start_date', 
+            'end_date', 'is_active', 'is_currently_active', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']

@@ -152,6 +152,29 @@ export interface ReportData {
   categoryPerformance: { categoryName: string; revenue: number; quantity: number }[];
 }
 
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  productId?: string;
+  productName?: string;
+  discountPercentage?: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  isCurrentlyActive: boolean;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'promotion' | 'alert' | 'system';
+  isRead: boolean;
+  createdAt: string;
+}
+
 // Navigation Types
 export type RootStackParamList = {
   Splash: undefined;

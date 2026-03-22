@@ -7,12 +7,13 @@ from django.utils import timezone
 import requests
 from django.conf import settings
 from decimal import Decimal
-from .models import Category, Product
+from .models import Category, Product, Promotion
 from .serializers import (
     CategorySerializer,
     ProductSerializer,
     ProductCreateUpdateSerializer,
-    ProductListSerializer
+    ProductListSerializer,
+    PromotionSerializer
 )
 
 
@@ -229,3 +230,62 @@ class ProductViewSet(viewsets.ModelViewSet):
         
         serializer = ProductSerializer(product)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def recommendations(self, request):
+        """
+        Get product recommendations based on user purchase history.
+        """
+        user = request.user
+        customer = getattr(user, 'customer_profile', None)
+        
+        if not customer:
+            # For guests or admins without profile, return popular products
+            recommendations = Product.objects.filter(is_active=True).order_by('-created_at')[:10]
+        else:
+            from invoices.models import InvoiceItem
+            from django.db.models import Count
+            
+            # Find categories from previous purchases
+            favorite_categories = InvoiceItem.objects.filter(
+                invoice__customer=customer
+            ).values('product__category').annotate(
+                count=Count('product__category')
+            ).order_by('-count')
+            
+            category_ids = [item['product__category'] for item in favorite_categories if item['product__category']]
+            
+            if category_ids:
+                # Suggest products from favorite categories that user hasn't necessarily bought
+                recommendations = Product.objects.filter(
+                    category__id__in=category_ids,
+                    is_active=True
+                ).exclude(
+                    # Optional: exclude products already in stock/cart? 
+                    # For now just keep it simple: top products in those categories
+                ).order_by('-created_at')[:10]
+            else:
+                # Fallback to popular products
+                recommendations = Product.objects.filter(is_active=True).order_by('-created_at')[:10]
+        
+        serializer = ProductListSerializer(recommendations, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class PromotionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Promotion management.
+    """
+    queryset = Promotion.objects.all()
+    serializer_class = PromotionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Promotion.objects.all()
+        return Promotion.objects.filter(is_active=True, end_date__gte=timezone.now())
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [IsAuthenticated()]
+        return [IsAdminUser()]

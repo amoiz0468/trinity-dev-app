@@ -8,20 +8,24 @@ import {
   Alert,
   TouchableOpacity,
   RefreshControl,
-  FlatList,
+  Image,
   TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Image } from 'react-native';
-import { MainTabParamList, Product } from '../types';
+import { MainTabParamList, Product, Promotion, Notification } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
 import ProductCard from '../components/ProductCard';
 import Loading from '../components/Loading';
+import PromotionBanner from '../components/PromotionBanner';
+import RecommendationSection from '../components/RecommendationSection';
+import NotificationCenter from '../components/NotificationCenter';
 import { SPACING, TYPOGRAPHY } from '../constants';
 import ProductService from '../services/productService';
+import PromotionService from '../services/promotionService';
+import NotificationService from '../services/notificationService';
 
 type HomeScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Home'>;
 
@@ -32,12 +36,18 @@ const HomeScreen: React.FC = () => {
   const { theme, isDark, toggleTheme } = useTheme();
   
   const [products, setProducts] = useState<Product[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isNotificationVisible, setIsNotificationVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortByPrice, setSortByPrice] = useState<'none' | 'asc' | 'desc'>('none');
   const [categories, setCategories] = useState<string[]>(['All']);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
@@ -57,6 +67,8 @@ const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
+    loadPromotionsAndRecommendations();
+    loadNotifications();
   }, [searchQuery, selectedCategory]);
 
   const loadProducts = async () => {
@@ -66,7 +78,6 @@ const HomeScreen: React.FC = () => {
         category: selectedCategory !== 'All' ? selectedCategory : undefined,
       });
 
-      // Extract unique categories for the filters if it's the first load
       if (categories.length === 1 && !searchQuery && selectedCategory === 'All') {
         const uniqueCategories = Array.from(new Set(fetchedProducts.map(p => p.category).filter(Boolean)));
         setCategories(['All', ...uniqueCategories]);
@@ -80,9 +91,45 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const loadPromotionsAndRecommendations = async () => {
+    try {
+      const [fetchedPromos, fetchedRecs] = await Promise.all([
+        PromotionService.getActivePromotions(),
+        ProductService.getRecommendations(),
+      ]);
+      setPromotions(fetchedPromos);
+      setRecommendedProducts(fetchedRecs);
+    } catch (error) {
+      console.error('Error loading extras:', error);
+    }
+  };
+
+  const loadNotifications = async () => {
+    try {
+      const fetchedNotifications = await NotificationService.getNotifications();
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    await NotificationService.markAsRead(id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await NotificationService.markAllAsRead();
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadProducts();
+    await Promise.all([
+      loadProducts(),
+      loadPromotionsAndRecommendations(),
+      loadNotifications()
+    ]);
     setRefreshing(false);
   };
 
@@ -95,28 +142,6 @@ const HomeScreen: React.FC = () => {
 
   const handleProductPress = (product: Product) => {
     navigation.navigate('ProductDetails' as any, { productId: product.id } as any);
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              await clearCart();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to logout');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const QuickActionCard: React.FC<{
@@ -168,14 +193,6 @@ const HomeScreen: React.FC = () => {
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            accessibilityLabel="Logout"
-            accessibilityRole="button"
-          >
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -191,6 +208,30 @@ const HomeScreen: React.FC = () => {
           />
         }
       >
+        {/* Promotions Banners */}
+        {promotions.length > 0 && (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.promotionsContainer}
+          >
+            {promotions.map(promo => (
+              <PromotionBanner 
+                key={promo.id} 
+                promotion={promo} 
+                onPress={(p) => p.productId && navigation.navigate('ProductDetails' as any, { productId: p.productId } as any)}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Personalized Recommendations */}
+        <RecommendationSection 
+          products={recommendedProducts} 
+          onProductPress={handleProductPress} 
+        />
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -201,9 +242,9 @@ const HomeScreen: React.FC = () => {
               onPress={() => navigation.navigate('Scan' as never)}
             />
             <QuickActionCard
-              icon="🛒"
-              title="My Cart"
-              onPress={() => navigation.navigate('Cart' as never)}
+              icon="🔔"
+              title={`Notifications${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+              onPress={() => setIsNotificationVisible(true)}
             />
             <QuickActionCard
               icon="📜"
@@ -272,6 +313,14 @@ const HomeScreen: React.FC = () => {
         </View>
 
       </ScrollView>
+
+      <NotificationCenter
+        isVisible={isNotificationVisible}
+        onClose={() => setIsNotificationVisible(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+      />
     </View>
   );
 };
@@ -319,24 +368,11 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     marginTop: 2,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
-  logoutButton: {
-    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-    marginLeft: 12,
-  },
-  logoutButtonText: {
-    color: theme.error,
-    fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
-  },
   headerIconButton: {
     padding: 8,
     borderRadius: 12,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+    marginLeft: 8,
   },
   headerIconText: {
     fontSize: 22,
@@ -357,7 +393,21 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   cartBadgeText: {
     color: '#FFFFFF',
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: TYPOGRAPHY.fontFamily.black,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1,
+    borderColor: theme.background,
+  },
+  promotionsContainer: {
+    marginVertical: SPACING.md,
   },
   content: {
     flex: 1,

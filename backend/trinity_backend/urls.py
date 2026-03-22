@@ -22,8 +22,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from users.views import CustomerViewSet, RegisterView, CurrentUserView, CustomTokenObtainPairView
-from products.views import CategoryViewSet, ProductViewSet
+from users.views import CustomerViewSet, RegisterView, CurrentUserView, CustomTokenObtainPairView, NotificationViewSet
+from products.views import CategoryViewSet, ProductViewSet, PromotionViewSet
 from invoices.views import (
     InvoiceViewSet,
     InvoiceItemViewSet,
@@ -51,6 +51,8 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
 router.register(r'invoice-items', InvoiceItemViewSet, basename='invoice-item')
 router.register(r'cart', CartViewSet, basename='cart')
+router.register(r'promotions', PromotionViewSet, basename='promotion')
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     # Admin
