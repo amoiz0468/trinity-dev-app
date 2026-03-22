@@ -8,6 +8,7 @@ import requests
 from django.conf import settings
 from decimal import Decimal
 from .models import Category, Product, Promotion
+from users.models import Notification
 from .serializers import (
     CategorySerializer,
     ProductSerializer,
@@ -289,3 +290,27 @@ class PromotionViewSet(viewsets.ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return [IsAuthenticated()]
         return [IsAdminUser()]
+
+    def perform_create(self, serializer):
+        promotion = serializer.save()
+        discount_text = ''
+        if promotion.discount_percentage is not None:
+            discount_text = f"{promotion.discount_percentage}% off"
+        if promotion.product:
+            target_text = promotion.product.name
+        else:
+            target_text = 'all products'
+
+        title = promotion.title or 'New Promotion'
+        message = promotion.description or ''
+        if discount_text:
+            message = f"{discount_text} on {target_text}. {message}".strip()
+        else:
+            message = f"New promotion on {target_text}. {message}".strip()
+
+        Notification.objects.create(
+            user=None,
+            title=title,
+            message=message,
+            type='promotion',
+        )
