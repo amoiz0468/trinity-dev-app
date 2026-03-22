@@ -549,14 +549,14 @@ class CartViewSet(viewsets.ViewSet):
             product=product,
             defaults={
                 'quantity': quantity,
-                'unit_price': product.price,
-                'total_price': product.price * quantity,
+                'unit_price': product.current_price,
+                'total_price': product.current_price * quantity,
             }
         )
 
         if not created:
             item.quantity += quantity
-            item.unit_price = product.price
+            item.unit_price = product.current_price
             item.save()
 
         return Response(CartItemSerializer(item).data, status=status.HTTP_201_CREATED)
@@ -585,7 +585,7 @@ class CartViewSet(viewsets.ViewSet):
             return Response({'detail': 'Insufficient stock.'}, status=status.HTTP_400_BAD_REQUEST)
 
         item.quantity = quantity
-        item.unit_price = item.product.price
+        item.unit_price = item.product.current_price
         item.save()
         return Response(CartItemSerializer(item).data)
 
