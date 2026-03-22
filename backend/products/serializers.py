@@ -19,11 +19,27 @@ class CategorySerializer(serializers.ModelSerializer):
         return obj.products.count()
 
 
+class PromotionSerializer(serializers.ModelSerializer):
+    """Serializer for Promotion model"""
+    product_name = serializers.ReadOnlyField(source='product.name')
+    is_currently_active = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'title', 'description', 'image_url', 'product', 
+            'product_name', 'discount_percentage', 'start_date', 
+            'end_date', 'is_active', 'is_currently_active', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model"""
     category_name = serializers.CharField(source='category.name', read_only=True)
     stock_status = serializers.SerializerMethodField()
     is_in_stock = serializers.SerializerMethodField()
+    active_promotion = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -100,6 +116,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for product lists"""
     category_name = serializers.CharField(source='category.name', read_only=True)
     stock_status = serializers.SerializerMethodField()
+    active_promotion = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -132,18 +149,3 @@ class ProductListSerializer(serializers.ModelSerializer):
             url = instance.picture.url
             data['picture_url'] = request.build_absolute_uri(url) if request else url
         return data
-
-
-class PromotionSerializer(serializers.ModelSerializer):
-    """Serializer for Promotion model"""
-    product_name = serializers.ReadOnlyField(source='product.name')
-    is_currently_active = serializers.BooleanField(read_only=True)
-
-    class Meta:
-        model = Promotion
-        fields = [
-            'id', 'title', 'description', 'image_url', 'product', 
-            'product_name', 'discount_percentage', 'start_date', 
-            'end_date', 'is_active', 'is_currently_active', 'created_at'
-        ]
-        read_only_fields = ['id', 'created_at']
