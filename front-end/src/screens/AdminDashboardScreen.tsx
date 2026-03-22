@@ -15,13 +15,15 @@ import {
     Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Svg, { Path, Rect, Circle, G, Line, LinearGradient, Stop, Defs, Text as SvgText } from 'react-native-svg';
 import { SPACING, TYPOGRAPHY } from '../constants';
-import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType, RootStackParamList, MainTabParamList } from '../types';
+import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType, Promotion, RootStackParamList } from '../types';
 import AdminService from '../services/adminService';
+import PromotionService from '../services/promotionService';
 import StatCard from '../components/StatCard';
 import OrderListItem from '../components/OrderListItem';
 import CustomerListItem from '../components/CustomerListItem';
@@ -29,11 +31,13 @@ import EmptyState from '../components/EmptyState';
 import { formatCurrency } from '../utils/format';
 import { useTheme } from '../contexts/ThemeContext';
 import AdminProductListItem from '../components/AdminProductListItem';
+import AdminPromotionListItem from '../components/AdminPromotionListItem';
 import ProductModal from '../components/ProductModal';
+import PromotionModal from '../components/PromotionModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type TabType = 'orders' | 'reports' | 'customers' | 'products';
+type TabType = 'orders' | 'reports' | 'customers' | 'products' | 'promotions';
 
 const ORDER_STATUS_CONFIG: Record<string, { label: string; order: number }> = {
     pending: { label: 'Pending', order: 0 },
@@ -313,7 +317,7 @@ const CategoryDistributionChart: React.FC<{ data: { categoryName: string; revenu
 // --- Main Screen Component ---
 
 const AdminDashboardScreen: React.FC = () => {
-    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const navigation = useNavigation<StackNavigationProp<any>>();
     const { user, logout } = useAuth();
     const { clearCart } = useCart();
     const { theme, isDark, toggleTheme } = useTheme();
@@ -357,6 +361,11 @@ const AdminDashboardScreen: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<ProductType | null>(null);
     const [showAddOptions, setShowAddOptions] = useState(false);
 
+    // Promotions state
+    const [promotions, setPromotions] = useState<Promotion[]>([]);
+    const [isPromotionModalVisible, setIsPromotionModalVisible] = useState(false);
+    const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
+
     useEffect(() => {
         loadData();
     }, [activeTab, orderFilter]);
@@ -368,6 +377,7 @@ const AdminDashboardScreen: React.FC = () => {
             else if (activeTab === 'reports') await loadReports();
             else if (activeTab === 'customers') await loadCustomers();
             else if (activeTab === 'products') await loadProducts();
+            else if (activeTab === 'promotions') await loadPromotions();
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -398,6 +408,11 @@ const AdminDashboardScreen: React.FC = () => {
     const loadProducts = async () => {
         const productsData = await AdminService.getProducts();
         setProducts(productsData);
+    };
+
+    const loadPromotions = async () => {
+        const promos = await PromotionService.getActivePromotions();
+        setPromotions(promos);
     };
 
     const handleRefresh = async () => {
@@ -475,6 +490,43 @@ const AdminDashboardScreen: React.FC = () => {
         await loadProducts();
     };
 
+    const handleEditPromotion = (promotion: Promotion) => {
+        setEditingPromotion(promotion);
+        setIsPromotionModalVisible(true);
+    };
+
+    const handleAddPromotion = () => {
+        setEditingPromotion(null);
+        setIsPromotionModalVisible(true);
+    };
+
+    const handleDeletePromotion = async (promotionId: string) => {
+        Alert.alert(
+            'Delete Promotion',
+            'Are you sure you want to delete this promotion?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await PromotionService.deletePromotion(promotionId);
+                        await loadPromotions();
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSavePromotion = async (promotionData: Partial<Promotion>) => {
+        if (editingPromotion) {
+            await PromotionService.updatePromotion(editingPromotion.id, promotionData);
+        } else {
+            await PromotionService.addPromotion(promotionData);
+        }
+        await loadPromotions();
+    };
+
     const handleDeleteCustomer = async (customerId: string) => {
         Alert.alert(
             'Delete User',
@@ -496,28 +548,6 @@ const AdminDashboardScreen: React.FC = () => {
                         }
                     }
                 }
-            ]
-        );
-    };
-
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await logout();
-                            await clearCart();
-                        } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to logout');
-                        }
-                    },
-                },
             ]
         );
     };
@@ -737,6 +767,47 @@ const AdminDashboardScreen: React.FC = () => {
         </View>
     );
 
+    const renderPromotionsTab = () => (
+        <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search promotions..."
+                    value={''} 
+                    onChangeText={() => {}} 
+                    placeholderTextColor={theme.textSecondary}
+                />
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAddPromotion}
+                >
+                    <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+            </View>
+
+            {loading ? (
+                <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
+            ) : promotions.length > 0 ? (
+                <FlatList
+                    data={promotions}
+                    renderItem={({ item }) => (
+                        <AdminPromotionListItem
+                            promotion={item}
+                            onEdit={handleEditPromotion}
+                            onDelete={handleDeletePromotion}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+                />
+            ) : (
+                <EmptyState icon="🎟️" title="No Promotions" message="No active promotions found" />
+            )}
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -755,10 +826,13 @@ const AdminDashboardScreen: React.FC = () => {
             </View>
 
             <View style={styles.tabBar}>
-                {renderTabButton('reports', 'Reports', '📊')}
-                {renderTabButton('orders', 'Orders', '📦')}
-                {renderTabButton('products', 'Products', '🍎')}
-                {renderTabButton('customers', 'Users', '👥')}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {renderTabButton('reports', 'Reports', '📊')}
+                    {renderTabButton('orders', 'Orders', '📦')}
+                    {renderTabButton('products', 'Products', '🍎')}
+                    {renderTabButton('promotions', 'Promos', '🎟️')}
+                    {renderTabButton('customers', 'Users', '👥')}
+                </ScrollView>
             </View>
 
             <View style={styles.contentWrapper}>
@@ -766,6 +840,7 @@ const AdminDashboardScreen: React.FC = () => {
                 {activeTab === 'reports' && renderReportsTab()}
                 {activeTab === 'customers' && renderCustomersTab()}
                 {activeTab === 'products' && renderProductsTab()}
+                {activeTab === 'promotions' && renderPromotionsTab()}
             </View>
 
             <ProductModal
@@ -773,6 +848,13 @@ const AdminDashboardScreen: React.FC = () => {
                 product={editingProduct}
                 onClose={() => setIsProductModalVisible(false)}
                 onSave={handleSaveProduct}
+            />
+
+            <PromotionModal
+                visible={isPromotionModalVisible}
+                promotion={editingPromotion}
+                onClose={() => setIsPromotionModalVisible(false)}
+                onSave={handleSavePromotion}
             />
         </SafeAreaView>
     );
@@ -806,47 +888,45 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
         borderRadius: 8,
     },
     headerTitle: {
-        fontSize: 32,
-        fontWeight: '800',
+        fontSize: 20,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
         color: theme.text,
-        letterSpacing: -0.5,
     },
     headerSubtitle: {
-        fontSize: 14,
+        fontSize: 12,
         color: theme.textSecondary,
-        marginTop: 4,
-        fontWeight: '500',
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     tabBar: {
         flexDirection: 'row',
         backgroundColor: theme.surface,
-        paddingHorizontal: SPACING.lg,
-        paddingVertical: SPACING.sm,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
+        paddingHorizontal: SPACING.sm,
     },
     tabButton: {
-        flex: 1,
-        alignItems: 'center',
+        paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.md,
-        borderRadius: 12,
-        marginHorizontal: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
     },
     tabButtonActive: {
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+        borderBottomColor: theme.primary,
     },
     tabIcon: {
-        fontSize: 20,
-        marginBottom: 4,
+        fontSize: 18,
+        marginRight: 6,
     },
     tabLabel: {
-        fontSize: 12,
+        fontSize: 14,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
         color: theme.textSecondary,
-        fontWeight: '600',
     },
     tabLabelActive: {
         color: theme.primary,
-        fontWeight: '800',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
     },
     contentWrapper: {
         flex: 1,
@@ -855,243 +935,86 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        flexGrow: 1,
-        paddingBottom: 40,
-    },
-    filterWrapper: {
-        marginBottom: SPACING.lg,
-    },
-    listWrapper: {
-        flex: 1,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-        marginHorizontal: SPACING.xl,
-        marginTop: SPACING.xl,
-        marginBottom: SPACING.md,
-        paddingHorizontal: SPACING.md,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    searchInput: {
-        flex: 1,
-        paddingVertical: SPACING.md,
-        fontSize: 16,
-        color: theme.text,
-    },
-    searchIcon: {
-        fontSize: 18,
-        marginRight: SPACING.sm,
-    },
-    addButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: theme.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: SPACING.sm,
-    },
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 24,
-        fontWeight: '600',
-        marginTop: -2,
-    },
-    addOptions: {
-        backgroundColor: theme.surface,
-        marginHorizontal: SPACING.xl,
-        marginBottom: SPACING.md,
-        borderRadius: 16,
-        padding: SPACING.sm,
-        flexDirection: 'row',
-        gap: 8,
-        borderWidth: 1,
-        borderColor: theme.border,
-    },
-    addOptionItem: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-        padding: SPACING.md,
-        borderRadius: 12,
-        justifyContent: 'center',
-    },
-    addOptionIcon: {
-        fontSize: 16,
-        marginRight: 8,
-    },
-    addOptionLabel: {
-        color: theme.text,
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    filterContainer: {
-        marginBottom: SPACING.lg,
-    },
-    filterChip: {
-        paddingHorizontal: 20,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-        marginRight: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    filterChipActive: {
-        backgroundColor: theme.primary,
-        borderColor: theme.primary,
-    },
-    filterChipText: {
-        fontSize: 13,
-        color: theme.textSecondary,
-        fontWeight: '700',
-        letterSpacing: 0.2,
-    },
-    filterChipTextActive: {
-        color: '#FFFFFF',
-    },
-    listContent: {
-        paddingHorizontal: SPACING.xl,
-        paddingBottom: 40,
-    },
-    filterContent: {
-        paddingLeft: SPACING.xl,
-        paddingRight: SPACING.xl,
-    },
-    loader: {
-        marginTop: SPACING.xl,
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: theme.background,
+        padding: SPACING.xl,
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: '800',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
         color: theme.text,
-        marginHorizontal: SPACING.xl,
-        marginTop: SPACING.xl,
         marginBottom: SPACING.lg,
     },
     statsGrid: {
         flexDirection: 'row',
-        paddingHorizontal: SPACING.xl,
-        gap: SPACING.lg,
+        flexWrap: 'wrap',
+        marginHorizontal: -SPACING.xs,
+        marginBottom: SPACING.xl,
     },
     statCardHalf: {
-        flex: 1,
+        width: '50%',
+        padding: SPACING.xs,
     },
     chartWrapper: {
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 1)',
-        marginHorizontal: SPACING.xl,
-        marginBottom: SPACING.lg,
-        padding: SPACING.xl,
+        backgroundColor: theme.surface,
         borderRadius: 24,
+        padding: SPACING.xl,
+        marginBottom: SPACING.xl,
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: isDark ? 0 : 0.05,
-        shadowRadius: 10,
-        elevation: isDark ? 0 : 2,
+        borderColor: theme.border,
     },
     chartTitle: {
-        color: theme.text,
         fontSize: 16,
-        fontWeight: '700',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
         marginBottom: SPACING.lg,
     },
-    sideBySideCharts: {
-        flexDirection: 'row',
+    emptyChartText: {
+        textAlign: 'center',
+        padding: SPACING.xl,
+        color: theme.textSecondary,
+        fontStyle: 'italic',
     },
     chartLegendContainer: {
-        marginTop: SPACING.md,
         flexDirection: 'row',
         flexWrap: 'wrap',
+        marginTop: SPACING.lg,
+        gap: SPACING.md,
     },
     chartLegendItem: {
-        width: '50%',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
     },
     chartLegendDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 8,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
     },
     chartLegendText: {
+        fontSize: 11,
         color: theme.textSecondary,
-        fontSize: 12,
-        fontWeight: '600',
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     customerSummaryRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: SPACING.sm,
-    },
-    customerSummaryText: {
-        color: theme.textSecondary,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    growthPositive: {
-        color: theme.success,
-        fontWeight: '700',
-    },
-    growthNegative: {
-        color: theme.error,
-        fontWeight: '700',
-    },
-    chartAxisLabels: {
-        marginTop: 6,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    axisLabel: {
-        color: theme.textSecondary,
-        fontSize: 11,
-        fontWeight: '500',
-    },
-    barRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
         marginBottom: SPACING.md,
     },
-    barRowLabel: {
-        width: 70,
-        color: theme.textSecondary,
+    customerSummaryText: {
         fontSize: 12,
-        fontWeight: '600',
-    },
-    barBg: {
-        flex: 1,
-        height: 10,
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-        borderRadius: 5,
-        marginHorizontal: SPACING.md,
-        overflow: 'hidden',
-    },
-    barFill: {
-        height: '100%',
-        borderRadius: 5,
-    },
-    barVal: {
-        width: 35,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
         color: theme.text,
-        fontSize: 12,
-        fontWeight: '700',
-        textAlign: 'right',
+    },
+    growthPositive: { color: theme.success },
+    growthNegative: { color: theme.error },
+    chartAxisLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 6,
+    },
+    axisLabel: {
+        fontSize: 10,
+        color: theme.textMuted,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     categoryItem: {
         marginBottom: SPACING.md,
@@ -1099,81 +1022,175 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     categoryHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-        gap: 8,
+        marginBottom: 4,
     },
     categoryName: {
-        flex: 1,
-        color: theme.text,
         fontSize: 13,
-        fontWeight: '700',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
     },
     categoryMeta: {
+        fontSize: 12,
         color: theme.textSecondary,
-        fontSize: 11,
-        fontWeight: '600',
-        flexShrink: 1,
-        textAlign: 'right',
+    },
+    barBg: {
+        height: 8,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    barFill: {
+        height: '100%',
+        borderRadius: 4,
     },
     categoryPercent: {
-        color: theme.textSecondary,
-        fontSize: 11,
-        marginTop: 4,
-        textAlign: 'right',
-    },
-    emptyChartText: {
-        color: theme.textSecondary,
-        fontSize: 13,
-        fontWeight: '500',
+        fontSize: 10,
+        color: theme.textMuted,
+        marginTop: 2,
     },
     productItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 1)',
-        marginHorizontal: SPACING.xl,
-        marginBottom: 10,
-        padding: SPACING.lg,
+        backgroundColor: theme.surface,
+        padding: SPACING.md,
         borderRadius: 16,
+        marginBottom: SPACING.sm,
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDark ? 0 : 0.03,
-        shadowRadius: 5,
-        elevation: isDark ? 0 : 1,
+        borderColor: theme.border,
     },
     productRank: {
-        width: 36,
-        height: 36,
-        borderRadius: 12,
-        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(79, 70, 229, 0.1)',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: theme.primary + '20',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: SPACING.md,
     },
     productRankText: {
-        fontSize: 14,
-        fontWeight: '800',
+        fontSize: 12,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
         color: theme.primary,
     },
     productInfo: {
         flex: 1,
     },
     productName: {
-        fontSize: 16,
-        fontWeight: '700',
+        fontSize: 14,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
         color: theme.text,
     },
     productSales: {
         fontSize: 12,
         color: theme.textSecondary,
-        marginTop: 2,
     },
     productRevenue: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: theme.primary,
+        fontSize: 14,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+    },
+    searchContainer: {
+        padding: SPACING.xl,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.md,
+    },
+    searchIcon: {
+        fontSize: 18,
+    },
+    searchInput: {
+        flex: 1,
+        height: 48,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+        borderRadius: 12,
+        paddingHorizontal: SPACING.md,
+        color: theme.text,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
+    },
+    addButton: {
+        width: 48,
+        height: 48,
+        backgroundColor: theme.primary,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addButtonText: {
+        fontSize: 24,
+        color: '#FFF',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+    },
+    filterWrapper: {
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
+    },
+    filterContainer: {
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: SPACING.md,
+    },
+    filterContent: {
+        gap: SPACING.sm,
+    },
+    filterChip: {
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.sm,
+        borderRadius: 20,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+        borderWidth: 1,
+        borderColor: theme.border,
+    },
+    filterChipActive: {
+        backgroundColor: theme.primary,
+        borderColor: theme.primary,
+    },
+    filterChipText: {
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        fontSize: 13,
+    },
+    filterChipTextActive: {
+        color: '#FFF',
+    },
+    listWrapper: {
+        flex: 1,
+    },
+    listContent: {
+        padding: SPACING.xl,
+    },
+    loader: {
+        marginTop: SPACING.xxl,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addOptions: {
+        backgroundColor: theme.surface,
+        marginHorizontal: SPACING.xl,
+        marginBottom: SPACING.md,
+        borderRadius: 16,
+        padding: SPACING.md,
+        borderWidth: 1,
+        borderColor: theme.border,
+        gap: SPACING.md,
+    },
+    addOptionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.md,
+        padding: SPACING.sm,
+    },
+    addOptionIcon: {
+        fontSize: 20,
+    },
+    addOptionLabel: {
+        fontSize: 14,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+    },
+    sideBySideCharts: {
+        flexDirection: 'row',
     },
 });
 

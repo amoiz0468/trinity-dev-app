@@ -95,3 +95,42 @@ class Product(models.Model):
         elif self.quantity_in_stock < 10:
             return "Low Stock"
         return "In Stock"
+
+
+class Promotion(models.Model):
+    """
+    Model for storing promotional banners and deals.
+    """
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    image_url = models.URLField(max_length=500, blank=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='promotions'
+    )
+    discount_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_currently_active(self):
+        from django.utils import timezone
+        now = timezone.now()
+        return self.is_active and self.start_date <= now <= self.end_date
