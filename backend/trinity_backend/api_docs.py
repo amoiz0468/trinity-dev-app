@@ -79,6 +79,11 @@ def api_index(request):
             "paypal": {
                 "webhook": "POST /api/paypal/webhook/"
             },
+            "payments": {
+                "verify": "GET /api/payments/verify/{transactionId}",
+                "process": "POST /api/payments/process",
+                "refund": "POST /api/payments/refund"
+            },
             "reports": {
                 "kpi_dashboard": "GET /api/reports/?days=30",
                 "sales_report": "GET /api/reports/sales/?days=30",

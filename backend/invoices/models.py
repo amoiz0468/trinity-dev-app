@@ -12,6 +12,7 @@ class Invoice(models.Model):
     """
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('processing', 'Processing'),
         ('paid', 'Paid'),
         ('cancelled', 'Cancelled'),
         ('refunded', 'Refunded'),

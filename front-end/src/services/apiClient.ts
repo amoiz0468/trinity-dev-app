@@ -9,6 +9,9 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    // Helps verify at runtime which backend URL the app is actually using.
+    console.log(`[API] Base URL: ${API_CONFIG.BASE_URL}`);
+
     this.client = axios.create({
       baseURL: API_CONFIG.BASE_URL,
       timeout: API_CONFIG.TIMEOUT,
@@ -18,6 +21,42 @@ class ApiClient {
     });
 
     this.setupInterceptors();
+  }
+
+  private extractBackendMessage(data: any): string | null {
+    if (!data) return null;
+
+    if (typeof data === 'string') {
+      return data;
+    }
+
+    const directMessage = data?.detail || data?.message || data?.error;
+    if (typeof directMessage === 'string' && directMessage.trim()) {
+      return directMessage;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const first = data[0];
+      return typeof first === 'string' ? first : JSON.stringify(first);
+    }
+
+    if (typeof data === 'object') {
+      for (const [field, value] of Object.entries(data)) {
+        if (Array.isArray(value) && value.length > 0) {
+          const first = value[0];
+          if (typeof first === 'string') {
+            return `${field}: ${first}`;
+          }
+          return `${field}: ${JSON.stringify(first)}`;
+        }
+
+        if (typeof value === 'string' && value.trim()) {
+          return `${field}: ${value}`;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -42,6 +81,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
+        const baseURL = error.config?.baseURL || this.client.defaults.baseURL || '';
+        const path = error.config?.url || '';
+        const requestUrl = `${baseURL}${path}`;
+
         if (error.response) {
           // Server responded with error status
           const status = error.response.status;
@@ -56,9 +99,12 @@ class ApiClient {
           } else if (status >= 500) {
             throw new Error(ERROR_MESSAGES.SERVER_ERROR);
           }
-          throw new Error(error.response.data?.message || 'Request failed');
+          
+          const backendMessage = this.extractBackendMessage(error.response.data);
+          throw new Error(backendMessage || `Request failed (${requestUrl})`);
         } else if (error.request) {
-          throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
+          // Request made but no response
+          throw new Error(`${ERROR_MESSAGES.NETWORK_ERROR} (${requestUrl})`);
         } else {
           throw new Error(error.message || 'Unknown request error');
         }

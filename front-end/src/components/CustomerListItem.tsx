@@ -7,11 +7,13 @@ import { formatCurrency, formatDate } from '../utils/format';
 interface CustomerListItemProps {
     customer: Customer;
     onPress?: (customer: Customer) => void;
+    onDelete?: (customerId: string) => void;
 }
 
 const CustomerListItem: React.FC<CustomerListItemProps> = ({
     customer,
     onPress,
+    onDelete,
 }) => {
     return (
         <TouchableOpacity
@@ -20,22 +22,36 @@ const CustomerListItem: React.FC<CustomerListItemProps> = ({
             activeOpacity={0.7}
         >
             <View style={styles.header}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {customer.firstName.charAt(0)}{customer.lastName.charAt(0)}
-                    </Text>
+                <View style={styles.leftContent}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                            {customer.firstName.charAt(0)}{customer.lastName.charAt(0)}
+                        </Text>
+                    </View>
+                    <View style={styles.customerInfo}>
+                        <Text style={styles.name}>
+                            {customer.firstName} {customer.lastName}
+                        </Text>
+                        <Text style={styles.email} numberOfLines={1}>
+                            {customer.email}
+                        </Text>
+                        {customer.phone && (
+                            <Text style={styles.phone}>{customer.phone}</Text>
+                        )}
+                    </View>
                 </View>
-                <View style={styles.customerInfo}>
-                    <Text style={styles.name}>
-                        {customer.firstName} {customer.lastName}
-                    </Text>
-                    <Text style={styles.email} numberOfLines={1}>
-                        {customer.email}
-                    </Text>
-                    {customer.phone && (
-                        <Text style={styles.phone}>{customer.phone}</Text>
-                    )}
-                </View>
+                {onDelete && (
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onDelete(customer.id);
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Text style={styles.deleteIconText}>🗑️</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={styles.stats}>
@@ -83,6 +99,13 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         marginBottom: SPACING.md,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    leftContent: {
+        flexDirection: 'row',
+        flex: 1,
+        alignItems: 'center',
     },
     avatar: {
         width: 50,
@@ -116,6 +139,14 @@ const styles = StyleSheet.create({
     phone: {
         fontSize: TYPOGRAPHY.fontSize.sm,
         color: COLORS.textSecondary,
+    },
+    deleteButton: {
+        justifyContent: 'center',
+        paddingLeft: SPACING.md,
+    },
+    deleteIconText: {
+        fontSize: 20,
+        color: COLORS.error,
     },
     stats: {
         flexDirection: 'row',

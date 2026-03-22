@@ -4,14 +4,17 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count, Avg
+from django.db.models import Sum, Count, Avg, Q, Max, DecimalField, ProtectedError
+from django.db.models.functions import Coalesce
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Customer
 from .serializers import (
     CustomerSerializer,
     CustomerCreateSerializer,
     CustomerPurchaseHistorySerializer,
     CustomerRegistrationSerializer,
-    UserSerializer
+    UserSerializer,
+    EmailOrUsernameTokenObtainPairSerializer,
 )
 
 
@@ -33,9 +36,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        annotated_queryset = Customer.objects.select_related('user').annotate(
+            order_count=Count('invoices', distinct=True),
+            total_spent=Coalesce(
+                Sum('invoices__total_amount', filter=Q(invoices__status='paid')),
+                0,
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            ),
+            last_order_date=Max('invoices__created_at'),
+        )
+
         if self.request.user.is_staff:
-            return Customer.objects.all()
-        return Customer.objects.filter(user=self.request.user)
+            return annotated_queryset
+        return annotated_queryset.filter(user=self.request.user)
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -50,6 +63,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update']:
             return CustomerCreateSerializer
         return CustomerSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "Cannot delete this user because they have existing orders. This would affect revenue calculations and purchase history."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):
@@ -157,3 +179,10 @@ class CurrentUserView(APIView):
             request.user.username = serializer.validated_data['email']
             request.user.save(update_fields=['email', 'username'])
         return Response(CustomerSerializer(customer).data)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    JWT login endpoint supporting email or username.
+    """
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer

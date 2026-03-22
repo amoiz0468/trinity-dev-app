@@ -12,10 +12,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
-from decouple import config
+from decouple import AutoConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+config = AutoConfig(search_path=BASE_DIR.parent)
 
 
 # Quick-start development settings - unsuitable for production
@@ -26,6 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default="django-insecure-79k_c#s+7g_2jrrkg2-cn
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
+ALLOW_ALL_HOSTS_IN_DEBUG = config('ALLOW_ALL_HOSTS_IN_DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.1.38,*,10.0.2.2,.loca.lt', cast=lambda v: [s.strip() for s in v.split(',')])
 
@@ -195,12 +197,17 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.38:8081,http://192.168.1.38:3000,https://trinity-django-api.loca.lt',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
-CORS_ALLOW_ALL_ORIGINS = True # Allow all origins for local development
+# CORS Settings
+CORS_ALLOW_CREDENTIALS = True
+if DEBUG and ALLOW_ALL_HOSTS_IN_DEBUG:
+    ALLOWED_HOSTS = ['*']
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        default='http://localhost:3000,http://127.0.0.1:3000',
+        cast=lambda v: [s.strip() for s in v.split(',')]
+    )
 
 # API Documentation (drf-spectacular)
 SPECTACULAR_SETTINGS = {

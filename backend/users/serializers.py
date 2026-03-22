@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Customer
 
 
@@ -20,6 +21,9 @@ class CustomerSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     full_address = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
+    order_count = serializers.IntegerField(read_only=True)
+    total_spent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    last_order_date = serializers.DateTimeField(read_only=True, allow_null=True)
     
     class Meta:
         model = Customer
@@ -27,7 +31,8 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'user', 'first_name', 'last_name', 'phone_number', 'email',
             'address', 'zip_code', 'city', 'country',
             'is_active', 'created_at', 'updated_at',
-            'full_name', 'full_address'
+            'full_name', 'full_address',
+            'order_count', 'total_spent', 'last_order_date'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -93,6 +98,8 @@ class CustomerRegistrationSerializer(serializers.Serializer):
                 password=validated_data['password'],
                 first_name=validated_data['first_name'],
                 last_name=validated_data['last_name'],
+                is_staff=False,
+                is_superuser=False,
             )
             customer = Customer.objects.create(
                 user=user,
@@ -106,3 +113,17 @@ class CustomerRegistrationSerializer(serializers.Serializer):
                 country=validated_data['country'],
             )
         return customer
+
+
+class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Allow JWT login with either username or email in the `username` field.
+    """
+
+    def validate(self, attrs):
+        identifier = attrs.get(self.username_field)
+        if identifier and '@' in str(identifier):
+            user = User.objects.filter(email__iexact=str(identifier).strip()).first()
+            if user:
+                attrs[self.username_field] = user.get_username()
+        return super().validate(attrs)

@@ -6,7 +6,6 @@ import {
   ScrollView,
   Alert,
   Linking,
-  Platform,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,14 +24,18 @@ type PaymentNavigationProp = StackNavigationProp<RootStackParamList, 'Payment'>;
 /**
  * Payment Screen
  * Handles PayPal payment integration
- * Note: In a real app, you would use react-native-paypal SDK
- * This is a simplified version showing the flow
+ * PayPal payment flow:
+ * 1) Create order on backend
+ * 2) Open PayPal approval URL
+ * 3) Capture approved order on backend
  */
 const PaymentScreen: React.FC = () => {
   const route = useRoute<PaymentRouteProp>();
   const navigation = useNavigation<PaymentNavigationProp>();
   const { cart, clearCart } = useCart();
   const [processing, setProcessing] = useState(false);
+  const [pendingPayPalOrderId, setPendingPayPalOrderId] = useState<string | null>(null);
+  const [pendingApprovalUrl, setPendingApprovalUrl] = useState<string | null>(null);
 
   const handlePayPalPayment = async () => {
     setProcessing(true);
@@ -42,25 +45,38 @@ const PaymentScreen: React.FC = () => {
 
       // Initialize PayPal payment
       const paymentData = await PaymentService.initiatePayment({
-        orderId: route.params.orderId,
+        orderId: order.id,
         amount: cart.totalAmount,
         currency: 'USD',
       });
 
-      // Find approval URL in links
-      const approvalLink = paymentData.links.find((link: any) => link.rel === 'approve');
-      
-      if (!approvalLink) {
-        throw new Error('Approval link not found in PayPal response');
+      const links = Array.isArray(paymentData.links) ? paymentData.links : [];
+      const approvalLink = links.find((link: any) =>
+        ['approve', 'payer-action'].includes(String(link?.rel || '').toLowerCase())
+      );
+      const approvalUrl =
+        approvalLink?.href ||
+        paymentData.approval_url ||
+        paymentData.approve_url ||
+        (paymentData?.id
+          ? `https://www.sandbox.paypal.com/checkoutnow?token=${paymentData.id}`
+          : null) ||
+        null;
+
+      if (!approvalUrl) {
+        const statusHint = paymentData?.status ? ` (status: ${paymentData.status})` : '';
+        throw new Error(`Approval link not found in PayPal response${statusHint}`);
       }
 
-      // In a real app, you would open PayPal SDK here
-      if (Platform.OS === 'web') {
-        await Linking.openURL(approvalLink.href);
-      } else {
-        // On mobile, use PayPal SDK or simulation
-        await simulatePayPalApproval(paymentData.id);
-      }
+      setPendingPayPalOrderId(paymentData.id);
+      setPendingApprovalUrl(approvalUrl);
+      setProcessing(false);
+      await Linking.openURL(approvalUrl);
+
+      Alert.alert(
+        'Complete PayPal Approval',
+        'After approving payment in the browser, return to the app and tap "I Approved Payment".'
+      );
 
     } catch (error: any) {
       Alert.alert('Payment Failed', error.message || ERROR_MESSAGES.PAYMENT_FAILED);
@@ -68,42 +84,21 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
-  const simulatePayPalApproval = async (paymentId: string) => {
-    // Simulate user approval
-    Alert.alert(
-      'PayPal Payment',
-      'In a real app, PayPal SDK would handle this. Proceed with payment?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setProcessing(false),
-        },
-        {
-          text: 'Pay',
-          onPress: () => executePayment(paymentId, 'simulated-payer-id'),
-        },
-      ]
-    );
-  };
-
-  const executePayment = async (paypalOrderId: string, payerId: string) => {
+  const executePayment = async (paymentId: string) => {
+    setProcessing(true);
     try {
       // Execute the payment
       const paymentResponse = await PaymentService.executePayment(
         route.params.orderId,
-        paypalOrderId
+        paymentId
       );
 
-      if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED') {
-        // Update order status
-        await OrderService.updateOrderStatus(
-          route.params.orderId,
-          'COMPLETED' as any
-        );
+      if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED' || paymentResponse.success) {
 
         // Clear cart
         clearCart();
+        setPendingPayPalOrderId(null);
+        setPendingApprovalUrl(null);
 
         // Show success message
         Alert.alert(
@@ -115,10 +110,7 @@ const PaymentScreen: React.FC = () => {
               onPress: () => {
                 navigation.reset({
                   index: 0,
-                  routes: [
-                    { name: 'Main' },
-                    { name: 'OrderConfirmation', params: { orderId: route.params.orderId } } as any,
-                  ],
+                  routes: [{ name: 'Main' as never } as any],
                 });
               },
             },
@@ -172,6 +164,36 @@ const PaymentScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
+        {pendingPayPalOrderId ? (
+          <>
+            <Button
+              title="I Approved Payment"
+              onPress={() => executePayment(pendingPayPalOrderId)}
+              loading={processing}
+              fullWidth
+              size="large"
+              style={styles.payButton}
+            />
+            <Button
+              title="Reopen PayPal"
+              onPress={() => pendingApprovalUrl && Linking.openURL(pendingApprovalUrl)}
+              variant="outline"
+              fullWidth
+              disabled={processing || !pendingApprovalUrl}
+              style={styles.payButton}
+            />
+            <Button
+              title="Cancel PayPal Flow"
+              onPress={() => {
+                setPendingPayPalOrderId(null);
+                setPendingApprovalUrl(null);
+              }}
+              variant="outline"
+              fullWidth
+              disabled={processing}
+            />
+          </>
+        ) : (
         <Button
           title="Pay with PayPal"
           onPress={handlePayPalPayment}
@@ -180,6 +202,7 @@ const PaymentScreen: React.FC = () => {
           size="large"
           style={styles.payButton}
         />
+        )}
 
         <Button
           title="Cancel"

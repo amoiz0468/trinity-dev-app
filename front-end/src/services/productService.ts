@@ -1,4 +1,4 @@
-import { Product, ApiResponse } from '../types';
+import { Product } from '../types';
 import { ERROR_MESSAGES, API_CONFIG } from '../constants';
 import { mockProducts } from '../utils/mockAdminData';
 import apiClient from './apiClient';
@@ -8,6 +8,30 @@ import apiClient from './apiClient';
  * Handles product-related API operations
  */
 class ProductService {
+  private mapProduct(data: any): Product {
+    return {
+      id: String(data.id || ''),
+      name: data.name || '',
+      barcode: data.barcode || '',
+      brand: data.brand || '',
+      category: data.category_name || data.category?.name || String(data.category || ''),
+      price: Number(data.price || 0),
+      stock: Number(data.quantity_in_stock || 0),
+      imageUrl: data.picture_url || data.picture || '',
+      description: data.description || '',
+      nutritionalInfo: {
+        calories: Number(data.energy_kcal || 0),
+        protein: Number(data.proteins || 0),
+        carbohydrates: Number(data.carbohydrates || 0),
+        fat: Number(data.fat || 0),
+        fiber: Number(data.fiber || 0),
+        sugar: Number(data.sugars || 0),
+        sodium: Number(data.salt || 0),
+        servingSize: '100g',
+      },
+    };
+  }
+
   /**
    * Map backend product to frontend Product type
    */
@@ -194,7 +218,7 @@ class ProductService {
       }
 
       const response = await apiClient.get<any>(`/products/${productId}/`);
-      return response && Number(response.quantity_in_stock || 0) >= quantity;
+      return Number(response.quantity_in_stock || 0) >= quantity;
     } catch (error: any) {
       console.error('Error checking stock:', error);
       return false;

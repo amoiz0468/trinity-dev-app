@@ -1,0 +1,63 @@
+Integration Status Report
+Date: 2026-03-18
+
+Summary
+- Total integration groups tracked: 18
+- Integrations done: 13
+- Integrations missing/incomplete: 5
+
+Done Integrations
+1) Auth login (JWT token) integrated
+   - Frontend calls: POST /api/auth/token/
+2) Auth signup integrated
+   - Frontend calls: POST /api/auth/register/
+3) Current user fetch integrated
+   - Frontend calls: GET /api/auth/me/
+4) Profile update integrated
+   - Frontend calls: PATCH /api/auth/me/
+5) Product list/detail/search integrated
+   - Frontend calls: /api/products/
+6) Product barcode lookup integrated
+   - Frontend calls: GET /api/products/barcode/{barcode}/
+7) OpenFoodFacts sync via backend integrated
+   - Frontend calls: POST /api/products/sync_openfoodfacts/
+8) Admin product CRUD integrated
+   - Frontend calls: /api/products/ (GET/POST/PUT/DELETE)
+9) Checkout invoice creation integrated
+   - Frontend calls: POST /api/invoices/
+10) PayPal order creation integrated
+   - Frontend calls: POST /api/invoices/{id}/create_paypal_order/
+11) PayPal capture integrated
+   - Frontend calls: POST /api/invoices/{id}/capture_paypal_order/
+12) Order history and order actions endpoints integrated
+   - GET /api/invoices/history/
+   - PATCH /api/invoices/{id}/status/
+   - POST /api/invoices/{id}/cancel/
+   - GET /api/invoices/{id}/receipt/
+   - POST /api/invoices/{id}/send-receipt/
+   - Note: send-receipt currently returns a success response placeholder (no SMTP provider wired yet).
+13) Payment verify/process/refund endpoints integrated
+   - GET /api/payments/verify/{transactionId}
+   - POST /api/payments/process
+   - POST /api/payments/refund
+   - Note: refund and process are app-level processing flows (no PSP-specific refund API call wired yet).
+
+Missing / Incomplete Integrations
+1) Order confirmation navigation target missing
+   - Frontend navigates to OrderConfirmation after payment,
+     but screen/route is not implemented in navigator.
+
+2) Order status contract mismatch
+   - Frontend status enum: PENDING/PROCESSING/COMPLETED/CANCELLED
+   - Backend status enum: pending/paid/cancelled/refunded
+
+3) Cart backend integration incomplete
+   - Backend has /api/cart/* endpoints
+   - Frontend cart is local-storage/context based and does not sync with backend cart endpoints.
+
+4) Order/customer data mapping gaps
+   - Some UI screens expect richer order/customer fields than current API list responses provide.
+
+5) Environment example mismatch
+   - front-end .env.example points to port 3000
+   - Backend default API runs on port 8000

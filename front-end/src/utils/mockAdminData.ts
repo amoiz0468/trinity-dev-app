@@ -105,6 +105,12 @@ export const mockReportData: ReportData = {
         { date: '2026-01-29', count: 148 },
         { date: '2026-02-05', count: 156 },
     ],
+    categoryPerformance: [
+        { categoryName: 'Produce', revenue: 8950.25, quantity: 420 },
+        { categoryName: 'Dairy', revenue: 6420.10, quantity: 318 },
+        { categoryName: 'Bakery', revenue: 4110.75, quantity: 201 },
+        { categoryName: 'Meat', revenue: 2890.40, quantity: 132 },
+    ],
 };
 
 export const mockProducts: Product[] = [

@@ -16,8 +16,8 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { COLORS, SPACING, TYPOGRAPHY, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
-import { validateEmail, validatePassword } from '../utils/validation';
+import { COLORS, SPACING, TYPOGRAPHY, ERROR_MESSAGES } from '../constants';
+import { validateEmail } from '../utils/validation';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -33,10 +33,11 @@ const LoginScreen: React.FC = () => {
 
   const validate = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
+    const identifier = email.trim();
 
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(email)) {
+    if (!identifier) {
+      newErrors.email = 'Email or username is required';
+    } else if (identifier.includes('@') && !validateEmail(identifier)) {
       newErrors.email = 'Please enter a valid email';
     }
 
@@ -53,7 +54,11 @@ const LoginScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await login({ email: email.trim().toLowerCase(), password });
+      const identifier = email.trim();
+      const normalizedIdentifier = identifier.includes('@')
+        ? identifier.toLowerCase()
+        : identifier;
+      await login({ email: normalizedIdentifier, password });
       // Navigation will happen automatically via AuthContext
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
@@ -88,13 +93,13 @@ const LoginScreen: React.FC = () => {
 
         <View style={styles.form}>
           <Input
-            label="Email Address"
+            label="Email or Username"
             value={email}
             onChangeText={setEmail}
-            placeholder="admin@admin.com"
-            keyboardType="email-address"
+            placeholder="you@example.com or admin"
+            keyboardType="default"
             autoCapitalize="none"
-            autoComplete="email"
+            autoComplete="username"
             error={errors.email}
             icon={<Text style={styles.inputIcon}>📧</Text>}
           />

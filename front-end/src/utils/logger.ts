@@ -100,8 +100,20 @@ class Logger {
 
 export const logger = new Logger();
 
+declare global {
+  // Prevent duplicate console patching during fast refresh/HMR.
+  // eslint-disable-next-line no-var
+  var __TRINITY_LOGGER_SETUP__: boolean | undefined;
+}
+
 // Global error handler
 export function setupGlobalErrorHandler(): void {
+  if (global.__TRINITY_LOGGER_SETUP__) {
+    return;
+  }
+  global.__TRINITY_LOGGER_SETUP__ = true;
+  logger.clear();
+
   const originalError = console.error;
   const originalWarn = console.warn;
 

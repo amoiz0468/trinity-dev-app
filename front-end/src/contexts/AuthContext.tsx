@@ -33,9 +33,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!API_CONFIG.USE_MOCK_DATA) {
         const authenticated = await AuthService.isAuthenticated();
         if (authenticated) {
-          const userData = await AuthService.getCurrentUser();
-          setUser(userData);
-          setIsAuthenticated(true);
+          try {
+            // Always refresh from backend to avoid stale role data in local storage.
+            const userData = await AuthService.refreshUserData();
+            setUser(userData);
+            setIsAuthenticated(true);
+          } catch {
+            await AuthService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
+          }
         }
       } else {
         // In mock mode, we could still check storage if we wanted persistence, 
@@ -94,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         firstName: signupData.firstName,
         lastName: signupData.lastName,
         phone: signupData.phone,
-        role: 'admin',
+        role: 'user',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

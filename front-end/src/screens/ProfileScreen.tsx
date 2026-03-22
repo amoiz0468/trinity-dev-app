@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,28 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Button from '../components/Button';
+import Input from '../components/Input';
+import AuthService from '../services/authService';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { clearCart } = useCart();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    phone: user?.phone || '',
+  });
 
   const handleLogout = () => {
     Alert.alert(
@@ -32,7 +43,6 @@ const ProfileScreen: React.FC = () => {
             try {
               await logout();
               await clearCart();
-              navigation.navigate('Login' as never);
             } catch (error: any) {
               Alert.alert('Error', error.message || 'Failed to logout');
             }
@@ -40,6 +50,29 @@ const ProfileScreen: React.FC = () => {
         },
       ]
     );
+  };
+
+  const handleSave = async () => {
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      Alert.alert('Error', 'First name and last name are required.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await AuthService.updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+      });
+      await refreshUser(); // Update global context
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update profile.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const ProfileItem: React.FC<{
@@ -72,8 +105,8 @@ const ProfileScreen: React.FC = () => {
     title: string;
     onPress: () => void;
   }> = ({ icon, title, onPress }) => (
-    <TouchableOpacity 
-      style={styles.menuItem} 
+    <TouchableOpacity
+      style={styles.menuItem}
       onPress={onPress}
       accessibilityLabel={title}
       accessibilityRole="button"
@@ -105,58 +138,85 @@ const ProfileScreen: React.FC = () => {
       </View>
 
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Account Information</Text>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('EditProfile' as never)}
-            style={styles.editButton}
-            accessibilityLabel="Edit Profile"
-            accessibilityRole="button"
-          >
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
+          {isEditing ? (
+            <View style={styles.editActions}>
+              <TouchableOpacity onPress={() => setIsEditing(false)} disabled={isSaving}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 15 }} />
+                ) : (
+                  <Text style={styles.saveText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => {
+              setFormData({
+                firstName: user?.firstName || '',
+                lastName: user?.lastName || '',
+                phone: user?.phone || '',
+              });
+              setIsEditing(true);
+            }}>
+              <Text style={styles.editText}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.card}>
-          <ProfileItem
-            icon="👤"
-            label="Full Name"
-            value={`${user?.firstName} ${user?.lastName}`}
-          />
-          <ProfileItem icon="📧" label="Email" value={user?.email || ''} />
-          {user?.phone && (
-            <ProfileItem icon="📱" label="Phone" value={user.phone} />
+          {isEditing ? (
+            <View style={styles.editFormContainer}>
+              <Input
+                label="First Name"
+                value={formData.firstName}
+                onChangeText={(txt) => setFormData(p => ({ ...p, firstName: txt }))}
+                style={styles.editInputText}
+                containerStyle={styles.editInput}
+              />
+              <Input
+                label="Last Name"
+                value={formData.lastName}
+                onChangeText={(txt) => setFormData(p => ({ ...p, lastName: txt }))}
+                style={styles.editInputText}
+                containerStyle={styles.editInput}
+              />
+              <ProfileItem icon="📧" label="Email (Cannot be changed here)" value={user?.email || ''} />
+              <Input
+                label="Phone Number"
+                value={formData.phone}
+                onChangeText={(txt) => setFormData(p => ({ ...p, phone: txt }))}
+                keyboardType="phone-pad"
+                style={styles.editInputText}
+                containerStyle={styles.editInput}
+              />
+            </View>
+          ) : (
+            <>
+              <ProfileItem
+                icon="👤"
+                label="Full Name"
+                value={`${user?.firstName} ${user?.lastName}`}
+              />
+              <ProfileItem icon="📧" label="Email" value={user?.email || ''} />
+              {user?.phone && (
+                <ProfileItem icon="📱" label="Phone" value={user.phone} />
+              )}
+              <ProfileItem
+                icon="🗓️"
+                label="Member Since"
+                value={new Date(user?.createdAt || '').toLocaleDateString()}
+              />
+            </>
           )}
-          <ProfileItem
-            icon="🗓️"
-            label="Member Since"
-            value={new Date(user?.createdAt || '').toLocaleDateString()}
-          />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.card}>
-          <MenuSection
-            icon="🔔"
-            title="Notifications"
-            onPress={() => Alert.alert('Coming Soon', 'Notification settings')}
-          />
-          <MenuSection
-            icon="🔐"
-            title="Privacy & Security"
-            onPress={() => Alert.alert('Coming Soon', 'Privacy settings')}
-          />
-          <MenuSection
-            icon="💳"
-            title="Payment Methods"
-            onPress={() => Alert.alert('Coming Soon', 'Payment settings')}
-          />
-          <MenuSection
-            icon="📍"
-            title="Saved Addresses"
-            onPress={() => Alert.alert('Coming Soon', 'Address management')}
-          />
           <MenuSection
             icon="❓"
             title="Help & Support"
@@ -236,33 +296,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     marginBottom: SPACING.xl,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginLeft: 4,
-  },
-  sectionHeader: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.md,
+    paddingRight: SPACING.xs,
   },
-  editButton: {
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
-  },
-  editButtonText: {
+  sectionTitle: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily.black,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+  },
+  editText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  editActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  saveText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.success,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginLeft: 15,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
@@ -270,6 +343,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  editFormContainer: {
+    padding: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  editInput: {
+    marginBottom: SPACING.md,
+  },
+  editInputText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   profileItem: {
     flexDirection: 'row',
