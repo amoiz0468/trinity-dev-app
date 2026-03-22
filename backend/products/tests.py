@@ -1,5 +1,7 @@
 import pytest
-from products.models import Product, Category
+from django.utils import timezone
+from datetime import timedelta
+from products.models import Product, Category, Promotion
 
 
 @pytest.mark.django_db
@@ -23,6 +25,43 @@ class TestProductModel:
     
     def test_product_str_representation(self, product):
         assert str(product) == 'Coca Cola (Coca-Cola)'
+    
+    def test_product_current_price_without_promotion(self, product):
+        """Test that current_price returns regular price when no active promotion"""
+        assert product.current_price == product.price
+    
+    def test_product_current_price_with_active_promotion(self, product):
+        """Test that current_price returns discounted price when there's an active promotion"""
+        from decimal import Decimal
+        now = timezone.now()
+        promotion = Promotion.objects.create(
+            title='Test Promotion',
+            description='Test discount',
+            product=product,
+            discount_percentage=Decimal('20.00'),  # 20% discount
+            start_date=now - timedelta(hours=1),
+            end_date=now + timedelta(hours=1),
+            is_active=True
+        )
+        
+        expected_discounted_price = Decimal(str(product.price)) * Decimal('0.8')  # 20% off
+        assert product.current_price == expected_discounted_price
+    
+    def test_product_current_price_with_inactive_promotion(self, product):
+        """Test that current_price returns regular price when promotion is inactive"""
+        now = timezone.now()
+        promotion = Promotion.objects.create(
+            title='Test Promotion',
+            description='Test discount',
+            product=product,
+            discount_percentage=20.00,
+            start_date=now - timedelta(hours=2),
+            end_date=now - timedelta(hours=1),  # Ended 1 hour ago
+            is_active=True
+        )
+        
+        # Should return regular price since promotion is not active
+        assert product.current_price == product.price
 
 
 @pytest.mark.django_db
