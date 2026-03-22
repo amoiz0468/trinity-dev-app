@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
+from django.utils import timezone
 from .models import Category, Product, Promotion
 
 
@@ -33,7 +34,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'sugars', 'proteins', 'salt', 'fiber',
             'description', 'barcode', 'openfoodfacts_id',
             'last_synced', 'is_active', 'created_at', 'updated_at',
-            'stock_status', 'is_in_stock'
+            'stock_status', 'is_in_stock', 'active_promotion'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_synced']
 
@@ -44,6 +45,18 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.BooleanField())
     def get_is_in_stock(self, obj):
         return obj.is_in_stock
+
+    @extend_schema_field(PromotionSerializer(allow_null=True))
+    def get_active_promotion(self, obj):
+        now = timezone.now()
+        promotion = obj.promotions.filter(
+            is_active=True,
+            start_date__lte=now,
+            end_date__gte=now
+        ).first()
+        if promotion:
+            return PromotionSerializer(promotion, context=self.context).data
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -92,12 +105,25 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'brand', 'price', 'category_name',
-            'picture_url', 'quantity_in_stock', 'stock_status', 'is_active'
+            'picture_url', 'quantity_in_stock', 'stock_status', 
+            'is_active', 'active_promotion'
         ]
 
     @extend_schema_field(serializers.CharField())
     def get_stock_status(self, obj):
         return obj.stock_status
+
+    @extend_schema_field(PromotionSerializer(allow_null=True))
+    def get_active_promotion(self, obj):
+        now = timezone.now()
+        promotion = obj.promotions.filter(
+            is_active=True,
+            start_date__lte=now,
+            end_date__gte=now
+        ).first()
+        if promotion:
+            return PromotionSerializer(promotion, context=self.context).data
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

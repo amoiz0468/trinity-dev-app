@@ -44,6 +44,7 @@ export interface Product {
   description?: string;
   stock: number;
   nutritionalInfo?: NutritionalInfo;
+  activePromotion?: Promotion;
 }
 
 export interface NutritionalInfo {

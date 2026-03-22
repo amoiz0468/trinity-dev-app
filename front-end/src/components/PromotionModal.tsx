@@ -216,25 +216,24 @@ const PromotionModal: React.FC<PromotionModalProps> = ({
                   thumbColor="#FFF"
                 />
               </View>
+              <View style={styles.footer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={onClose}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.saveButton, loading && styles.disabledButton]}
+                  onPress={handleSave}
+                  disabled={loading}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {loading ? 'Saving...' : 'Save Promotion'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
-
-            <View style={styles.footer}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={onClose}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton, loading && styles.disabledButton]}
-                onPress={handleSave}
-                disabled={loading}
-              >
-                <Text style={styles.saveButtonText}>
-                  {loading ? 'Saving...' : 'Save Promotion'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </KeyboardAvoidingView>
       </View>
