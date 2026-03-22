@@ -28,6 +28,9 @@ class InvoiceItemCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceItem
         fields = ['product', 'quantity', 'unit_price']
+        extra_kwargs = {
+            'unit_price': {'required': False, 'allow_null': True}
+        }
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -118,6 +121,8 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                 product = locked_products[item_data['product'].pk]
                 item_payload = item_data.copy()
                 item_payload['product'] = product
+                if not item_payload.get('unit_price'):
+                    item_payload['unit_price'] = product.current_price
                 InvoiceItem.objects.create(invoice=invoice, **item_payload)
                 product.quantity_in_stock = product.quantity_in_stock - item_data['quantity']
                 product.save(update_fields=['quantity_in_stock'])

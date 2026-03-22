@@ -16,6 +16,7 @@ class ProductService {
       brand: data.brand || '',
       category: data.category_name || data.category?.name || String(data.category || ''),
       price: Number(data.price || 0),
+      currentPrice: data.current_price !== undefined ? Number(data.current_price) : Number(data.price || 0),
       stock: Number(data.quantity_in_stock || 0),
       imageUrl: data.picture_url || data.picture || '',
       description: data.description || '',
@@ -29,6 +30,7 @@ class ProductService {
         sodium: Number(data.salt || 0),
         servingSize: '100g',
       },
+      activePromotion: data.active_promotion || undefined,
     };
   }
 

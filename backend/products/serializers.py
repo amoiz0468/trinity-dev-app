@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
 from django.utils import timezone
@@ -40,6 +41,7 @@ class ProductSerializer(serializers.ModelSerializer):
     stock_status = serializers.SerializerMethodField()
     is_in_stock = serializers.SerializerMethodField()
     active_promotion = serializers.SerializerMethodField()
+    current_price = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -50,7 +52,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'sugars', 'proteins', 'salt', 'fiber',
             'description', 'barcode', 'openfoodfacts_id',
             'last_synced', 'is_active', 'created_at', 'updated_at',
-            'stock_status', 'is_in_stock', 'active_promotion'
+            'stock_status', 'is_in_stock', 'active_promotion', 'current_price'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_synced']
 
@@ -65,14 +67,20 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(PromotionSerializer(allow_null=True))
     def get_active_promotion(self, obj):
         now = timezone.now()
-        promotion = obj.promotions.filter(
+        promotion = Promotion.objects.filter(
             is_active=True,
             start_date__lte=now,
             end_date__gte=now
-        ).first()
+        ).filter(
+            Q(product=obj) | Q(product__isnull=True)
+        ).order_by('-discount_percentage', '-start_date').first()
         if promotion:
             return PromotionSerializer(promotion, context=self.context).data
         return None
+
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
+    def get_current_price(self, obj):
+        return obj.current_price
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -117,13 +125,14 @@ class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     stock_status = serializers.SerializerMethodField()
     active_promotion = serializers.SerializerMethodField()
+    current_price = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'brand', 'price', 'category_name',
             'picture_url', 'quantity_in_stock', 'stock_status', 
-            'is_active', 'active_promotion'
+            'is_active', 'active_promotion', 'current_price'
         ]
 
     @extend_schema_field(serializers.CharField())
@@ -133,14 +142,20 @@ class ProductListSerializer(serializers.ModelSerializer):
     @extend_schema_field(PromotionSerializer(allow_null=True))
     def get_active_promotion(self, obj):
         now = timezone.now()
-        promotion = obj.promotions.filter(
+        promotion = Promotion.objects.filter(
             is_active=True,
             start_date__lte=now,
             end_date__gte=now
-        ).first()
+        ).filter(
+            Q(product=obj) | Q(product__isnull=True)
+        ).order_by('-discount_percentage', '-start_date').first()
         if promotion:
             return PromotionSerializer(promotion, context=self.context).data
         return None
+
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
+    def get_current_price(self, obj):
+        return obj.current_price
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
