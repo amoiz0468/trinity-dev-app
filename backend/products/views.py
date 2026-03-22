@@ -49,7 +49,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     - Nutritional information tracking
     - Advanced filtering and sorting capabilities
     """
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(is_active=True)
     permission_classes = [IsAuthenticated]
     search_fields = ['name', 'brand', 'barcode', 'category__name']
     filterset_fields = ['category', 'is_active']
@@ -67,6 +67,16 @@ class ProductViewSet(viewsets.ModelViewSet):
         elif self.action in ['create', 'update', 'partial_update']:
             return ProductCreateUpdateSerializer
         return ProductSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Soft delete a product by setting is_active to False.
+        This preserves historical invoice data while hiding the product from the catalog.
+        """
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=False, methods=['post'])
     def sync_openfoodfacts(self, request):
