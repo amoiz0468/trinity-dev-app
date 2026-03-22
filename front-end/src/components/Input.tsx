@@ -15,9 +15,7 @@ interface InputProps extends TextInputProps {
   icon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
-  containerStyle?: any;
-  accessibilityLabel?: string;
-  accessibilityHint?: string;
+  containerStyle?: object;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -27,9 +25,9 @@ const Input: React.FC<InputProps> = ({
   rightIcon,
   onRightIconPress,
   containerStyle,
+  style,
   accessibilityLabel,
   accessibilityHint,
-  style,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);

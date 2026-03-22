@@ -14,7 +14,6 @@ import {
     Alert,
     Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
@@ -462,6 +461,31 @@ const AdminDashboardScreen: React.FC = () => {
         await loadProducts();
     };
 
+    const handleDeleteCustomer = async (customerId: string) => {
+        Alert.alert(
+            'Delete User',
+            'Are you sure you want to completely delete this user? This action cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await AdminService.deleteCustomer(customerId);
+                            await loadCustomers();
+                        } catch (error: any) {
+                            Alert.alert('Error', error.message || 'Failed to delete user');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const handleLogout = () => {
         Alert.alert(
             'Logout',
@@ -617,7 +641,12 @@ const AdminDashboardScreen: React.FC = () => {
             ) : customers.length > 0 ? (
                 <FlatList
                     data={customers}
-                    renderItem={({ item }) => <CustomerListItem customer={item} />}
+                    renderItem={({ item }) => (
+                        <CustomerListItem
+                            customer={item}
+                            onDelete={handleDeleteCustomer}
+                        />
+                    )}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.listContent}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}

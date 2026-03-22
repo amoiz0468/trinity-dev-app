@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count, Avg, Q, Max, DecimalField
+from django.db.models import Sum, Count, Avg, Q, Max, DecimalField, ProtectedError
 from django.db.models.functions import Coalesce
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Customer
@@ -63,6 +63,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update']:
             return CustomerCreateSerializer
         return CustomerSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "Cannot delete this user because they have existing orders. This would affect revenue calculations and purchase history."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):

@@ -217,6 +217,23 @@ class AdminService {
       throw new Error(error.message || 'Failed to fetch customers');
     }
   }
+  
+  async deleteCustomer(customerId: string): Promise<boolean> {
+    try {
+      if (API_CONFIG.USE_MOCK_DATA) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        const index = mockCustomers.findIndex((c: any) => c.id === customerId);
+        if (index === -1) return false;
+        mockCustomers.splice(index, 1);
+        return true;
+      }
+
+      await apiClient.delete(`/users/${customerId}/`);
+      return true;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to delete customer');
+    }
+  }
 
   async getReportData(startDate?: string, endDate?: string): Promise<ReportData> {
     try {

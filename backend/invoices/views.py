@@ -111,11 +111,26 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            return Invoice.objects.all()
-        customer = Customer.objects.filter(user=self.request.user).first()
-        if not customer:
-            return Invoice.objects.none()
-        return Invoice.objects.filter(customer=customer)
+            qs = Invoice.objects.all()
+        else:
+            customer = Customer.objects.filter(user=self.request.user).first()
+            if not customer:
+                return Invoice.objects.none()
+            qs = Invoice.objects.filter(customer=customer)
+
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param.lower())
+
+        payment_method_param = self.request.query_params.get('payment_method')
+        if payment_method_param:
+            qs = qs.filter(payment_method=payment_method_param.lower())
+
+        customer_param = self.request.query_params.get('customer')
+        if customer_param:
+            qs = qs.filter(customer_id=customer_param)
+
+        return qs
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:

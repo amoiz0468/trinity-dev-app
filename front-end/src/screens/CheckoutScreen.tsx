@@ -151,7 +151,6 @@ const CheckoutScreen: React.FC = () => {
               onChangeText={(value) => updateField('zipCode', value)}
               placeholder="Zip code"
               keyboardType="default"
-              textContentType="postalCode"
               containerStyle={styles.halfInput}
               error={errors.zipCode}
             />
@@ -162,7 +161,6 @@ const CheckoutScreen: React.FC = () => {
               onChangeText={(value) => updateField('city', value)}
               placeholder="City"
               autoCapitalize="words"
-              textContentType="addressCity"
               containerStyle={styles.halfInput}
               error={errors.city}
             />

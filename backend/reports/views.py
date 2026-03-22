@@ -166,14 +166,15 @@ class SalesReportView(APIView):
             created_at__gte=start_date,
             created_at__lte=end_date
         )
-        
-        # Sales by status
-        sales_by_status = invoices.values('status').annotate(
+
+        # Sales by status: count ALL invoices regardless of date so the chart
+        # reflects the true total per status, not just the current period window.
+        sales_by_status = Invoice.objects.values('status').annotate(
             count=Count('id'),
             total=Sum('total_amount')
         )
-        
-        # Sales by payment method
+
+        # Sales by payment method (keep date-scoped to the reporting period)
         sales_by_payment = invoices.filter(status='paid').values('payment_method').annotate(
             count=Count('id'),
             total=Sum('total_amount')
