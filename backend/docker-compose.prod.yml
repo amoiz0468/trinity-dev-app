@@ -1,17 +1,14 @@
-version: '3.8'
-
 services:
   backend:
-    build: ./backend # Build locally from Dockerfile
-    image: trinity-backend:latest # Local image name
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER_LOWERCASE}/trinity-backend:latest
     ports:
       - "8000:8000"
     env_file:
-      - .env # Load credentials from .env
+      - .env # load credentials from your .env on EC2
     environment:
       - DEBUG=False
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./db.sqlite3:/app/db.sqlite3 # Persist your database
-      - ./staticfiles:/app/staticfiles # Collect static files here
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./staticfiles:/app/staticfiles
     restart: always
