@@ -1,11 +1,12 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { COLORS, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -22,7 +23,7 @@ import Loading from '../components/Loading';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminScannerScreen from '../screens/AdminScannerScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
-import { View, Text } from 'react-native';
+import { View, Text, Platform, TouchableOpacity } from 'react-native';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -30,35 +31,38 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Tab Navigator for regular users
 const UserTabs: React.FC = () => {
   const { cart } = useCart();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: theme.surface,
           borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          borderTopColor: theme.border,
+          height: Platform.OS === 'ios' ? 88 : 60,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
-          fontSize: TYPOGRAPHY.fontSize.xs,
-          fontWeight: '600',
+          fontSize: 10,
+          fontFamily: TYPOGRAPHY.fontFamily.bold,
         },
         headerStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: theme.surface,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.border,
+          borderBottomColor: theme.border,
         },
         headerTitleStyle: {
-          fontSize: TYPOGRAPHY.fontSize.lg,
-          fontWeight: '700',
-          color: COLORS.text,
+          fontSize: 18,
+          fontFamily: TYPOGRAPHY.fontFamily.bold,
+          color: theme.text,
         },
       }}
     >
@@ -98,7 +102,7 @@ const UserTabs: React.FC = () => {
                     position: 'absolute',
                     top: -4,
                     right: -6,
-                    backgroundColor: COLORS.error,
+                    backgroundColor: theme.error,
                     borderRadius: 8,
                     minWidth: 16,
                     height: 16,
@@ -109,9 +113,9 @@ const UserTabs: React.FC = () => {
                 >
                   <Text
                     style={{
-                      color: COLORS.surface,
+                      color: '#FFFFFF',
                       fontSize: 10,
-                      fontWeight: '700',
+                      fontFamily: TYPOGRAPHY.fontFamily.bold,
                     }}
                   >
                     {cart.totalItems}
@@ -151,34 +155,38 @@ const UserTabs: React.FC = () => {
 
 // Tab Navigator for administrators
 const AdminTabs: React.FC = () => {
+  const { theme, toggleTheme, isDark } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: COLORS.secondary,
-        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarActiveTintColor: theme.secondary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: theme.surface,
           borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          borderTopColor: theme.border,
+          height: Platform.OS === 'ios' ? 88 : 60,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
-          fontSize: TYPOGRAPHY.fontSize.xs,
-          fontWeight: '600',
+          fontSize: 10,
+          fontFamily: TYPOGRAPHY.fontFamily.bold,
         },
         headerStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: theme.surface,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.border,
+          borderBottomColor: theme.border,
         },
         headerTitleStyle: {
-          fontSize: TYPOGRAPHY.fontSize.lg,
-          fontWeight: '700',
-          color: COLORS.text,
+          fontSize: 18,
+          fontFamily: TYPOGRAPHY.fontFamily.bold,
+          color: theme.text,
         },
       }}
     >
@@ -222,26 +230,43 @@ const AdminTabs: React.FC = () => {
 // Root Navigator
 const AppNavigator: React.FC = () => {
   const { isLoading, isAuthenticated, user } = useAuth();
+  const { theme, isDark } = useTheme();
 
   if (isLoading) {
     return <Loading />;
   }
 
+  const customNavigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: theme.primary,
+      background: theme.background,
+      card: theme.surface,
+      text: theme.text,
+      border: theme.border,
+      notification: theme.error,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={customNavigationTheme}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: COLORS.surface,
+            backgroundColor: theme.surface,
             elevation: 0,
             shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border,
           },
           headerTitleStyle: {
-            fontSize: TYPOGRAPHY.fontSize.lg,
-            fontWeight: '700',
-            color: COLORS.text,
+            fontSize: 18,
+            fontFamily: TYPOGRAPHY.fontFamily.bold,
+            color: theme.text,
           },
-          headerTintColor: COLORS.primary,
+          headerTintColor: theme.primary,
+          headerBackTitleVisible: false,
         }}
       >
         {!isAuthenticated ? (
@@ -257,7 +282,6 @@ const AppNavigator: React.FC = () => {
               component={SignupScreen}
               options={{
                 headerTitle: 'Create Account',
-                headerBackTitleVisible: false,
               }}
             />
           </>

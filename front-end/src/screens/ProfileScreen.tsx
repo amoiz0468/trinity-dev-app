@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,22 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import AuthService from '../services/authService';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, logout, refreshUser } = useAuth();
   const { clearCart } = useCart();
+  const { theme, themeName, toggleTheme, isDark } = useTheme();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,6 +32,8 @@ const ProfileScreen: React.FC = () => {
     lastName: user?.lastName || '',
     phone: user?.phone || '',
   });
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -103,19 +108,21 @@ const ProfileScreen: React.FC = () => {
   const MenuSection: React.FC<{
     icon: string;
     title: string;
-    onPress: () => void;
-  }> = ({ icon, title, onPress }) => (
+    onPress?: () => void;
+    rightElement?: React.ReactNode;
+  }> = ({ icon, title, onPress, rightElement }) => (
     <TouchableOpacity
       style={styles.menuItem}
       onPress={onPress}
+      disabled={!onPress}
       accessibilityLabel={title}
-      accessibilityRole="button"
+      accessibilityRole={onPress ? "button" : "none"}
     >
       <View style={styles.menuItemLeft}>
         <Text style={styles.menuIcon}>{icon}</Text>
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      {rightElement || (onPress && <Text style={styles.chevron}>›</Text>)}
     </TouchableOpacity>
   );
 
@@ -147,7 +154,7 @@ const ProfileScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSave} disabled={isSaving}>
                 {isSaving ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 15 }} />
+                  <ActivityIndicator size="small" color={theme.primary} style={{ marginLeft: 15 }} />
                 ) : (
                   <Text style={styles.saveText}>Save</Text>
                 )}
@@ -214,6 +221,7 @@ const ProfileScreen: React.FC = () => {
         </View>
       </View>
 
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.card}>
@@ -247,16 +255,16 @@ const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   header: {
     alignItems: 'center',
     padding: SPACING.xl,
     paddingTop: 60,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   logo: {
     width: 50,
@@ -268,28 +276,28 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 35,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(79, 70, 229, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
+    borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(79, 70, 229, 0.2)',
   },
   avatarText: {
     fontSize: 40,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   name: {
     fontSize: 28,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   email: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   section: {
@@ -306,7 +314,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginLeft: 4,
@@ -314,7 +322,7 @@ const styles = StyleSheet.create({
   editText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: theme.primary,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -325,24 +333,29 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   saveText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.success,
+    color: theme.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginLeft: 15,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 1)',
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: isDark ? 0 : 2,
   },
   editFormContainer: {
     padding: SPACING.lg,
@@ -361,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
   },
   profileItemLeft: {
     flexDirection: 'row',
@@ -377,14 +390,14 @@ const styles = StyleSheet.create({
   },
   profileLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontWeight: '600',
     marginBottom: 2,
   },
   profileValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.text,
   },
   menuItem: {
     flexDirection: 'row',
@@ -392,7 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -405,11 +418,11 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.text,
   },
   chevron: {
     fontSize: 20,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontWeight: '300',
   },
   footer: {
@@ -418,7 +431,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontWeight: '500',
   },
 });

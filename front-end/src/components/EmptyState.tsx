@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 
 interface EmptyStateProps {
   icon?: string;
@@ -17,6 +18,9 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   actionLabel,
   onAction,
 }) => {
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>
@@ -31,41 +35,48 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   icon: {
-    fontSize: 64,
+    fontSize: 72,
     marginBottom: SPACING.lg,
   },
   title: {
-    fontSize: TYPOGRAPHY.fontSize.xl,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 24,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: theme.text,
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   message: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: theme.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xl,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    lineHeight: 22,
   },
   button: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
-    borderRadius: LAYOUT.borderRadius,
+    borderRadius: 12,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0.3 : 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
 

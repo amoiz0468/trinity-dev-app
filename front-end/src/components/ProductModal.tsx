@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -12,7 +12,8 @@ import {
     Alert,
 } from 'react-native';
 import { Product } from '../types';
-import { COLORS, SPACING } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import Button from './Button';
 
 interface ProductModalProps {
@@ -28,6 +29,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
     onClose,
     onSave,
 }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
     const [name, setName] = useState('');
     const [brand, setBrand] = useState('');
     const [category, setCategory] = useState('');
@@ -118,13 +122,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <View style={styles.modalOverlay}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.modalContainer}
+                    style={styles.modalContent}
                 >
                     <View style={styles.header}>
                         <Text style={styles.title}>
                             {product ? 'Edit Product' : 'Add New Product'}
                         </Text>
-                        <TouchableOpacity onPress={onClose}>
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Text style={styles.closeIcon}>✕</Text>
                         </TouchableOpacity>
                     </View>
@@ -137,19 +141,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 value={name}
                                 onChangeText={setName}
                                 placeholder="e.g. Organic Bananas"
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                             />
                         </View>
  
                         <View style={styles.row}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: SPACING.md }]}>
                                 <Text style={styles.label}>Brand</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={brand}
                                     onChangeText={setBrand}
                                     placeholder="e.g. Nature's Pride"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                             <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -159,13 +163,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     value={category}
                                     onChangeText={setCategory}
                                     placeholder="e.g. Produce"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                         </View>
  
                         <View style={styles.row}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: SPACING.md }]}>
                                 <Text style={styles.label}>Price ($) *</Text>
                                 <TextInput
                                     style={styles.input}
@@ -173,7 +177,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setPrice}
                                     keyboardType="numeric"
                                     placeholder="0.00"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                             <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -184,14 +188,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setStock}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                         </View>
 
                         <Text style={styles.sectionHeader}>Nutritional Info (per 100g)</Text>
                         <View style={styles.row}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: SPACING.md }]}>
                                 <Text style={styles.label}>Calories (kcal)</Text>
                                 <TextInput
                                     style={styles.input}
@@ -199,7 +203,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setCalories}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                             <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -210,13 +214,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setProtein}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                         </View>
 
                         <View style={styles.row}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: SPACING.md }]}>
                                 <Text style={styles.label}>Carbs (g)</Text>
                                 <TextInput
                                     style={styles.input}
@@ -224,7 +228,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setCarbohydrates}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                             <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -235,7 +239,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                     onChangeText={setFat}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={COLORS.textSecondary}
+                                    placeholderTextColor={theme.textSecondary}
                                 />
                             </View>
                         </View>
@@ -247,7 +251,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 value={imageUrl}
                                 onChangeText={setImageUrl}
                                 placeholder="https://example.com/image.jpg"
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                             />
                         </View>
  
@@ -260,7 +264,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 multiline
                                 numberOfLines={4}
                                 placeholder="Product description..."
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                             />
                         </View>
 
@@ -269,6 +273,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 title={product ? 'Update Product' : 'Add Product'}
                                 onPress={handleSave}
                                 loading={loading}
+                                fullWidth
+                                size="large"
                             />
                         </View>
                     </ScrollView>
@@ -278,18 +284,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         justifyContent: 'flex-end',
     },
-    modalContainer: {
-        backgroundColor: COLORS.background,
+    modalContent: {
+        backgroundColor: theme.background,
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        maxHeight: '90%',
+        maxHeight: '92%',
         paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 10,
     },
     header: {
         flexDirection: 'row',
@@ -297,16 +308,26 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: SPACING.xl,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+        borderBottomColor: theme.border,
     },
     title: {
         fontSize: 20,
-        fontWeight: '800',
-        color: '#FFFFFF',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+    },
+    closeButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: theme.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.border,
     },
     closeIcon: {
-        fontSize: 20,
-        color: COLORS.textSecondary,
+        fontSize: 16,
+        color: theme.textSecondary,
     },
     form: {
         padding: SPACING.xl,
@@ -315,23 +336,25 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.lg,
     },
     label: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 14,
         marginBottom: 8,
-        fontWeight: '600',
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
     },
     input: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        color: '#FFFFFF',
-        borderRadius: 12,
-        padding: SPACING.md,
+        backgroundColor: theme.surface,
+        color: theme.text,
+        borderRadius: 14,
+        padding: Platform.OS === 'ios' ? SPACING.md : SPACING.sm,
         fontSize: 16,
+        fontFamily: TYPOGRAPHY.fontFamily.regular,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: theme.border,
     },
     textArea: {
         height: 100,
         textAlignVertical: 'top',
+        paddingTop: SPACING.md,
     },
     row: {
         flexDirection: 'row',
@@ -341,14 +364,14 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xl,
     },
     sectionHeader: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
         marginTop: SPACING.md,
-        marginBottom: SPACING.md,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-        paddingBottom: 4,
+        marginBottom: SPACING.lg,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        opacity: 0.8,
     },
 });
 

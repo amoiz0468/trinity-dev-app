@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor, act } from '@testing-library/react-native';
+import { render, waitFor, act, fireEvent } from '@testing-library/react-native';
 import { CartProvider, useCart } from '../CartContext';
 import { Text, Button } from 'react-native';
 import { Product } from '../../types';
@@ -70,7 +70,7 @@ describe('CartContext', () => {
     const addButton = getByText('Add Item');
     
     await act(async () => {
-      addButton.props.onPress();
+      fireEvent.press(addButton);
     });
 
     await waitFor(() => {

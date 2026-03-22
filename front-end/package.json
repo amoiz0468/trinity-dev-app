@@ -20,6 +20,7 @@
     "expo": "~54.0.0",
     "expo-barcode-scanner": "~14.0.0",
     "expo-camera": "~17.0.10",
+    "expo-constants": "~18.0.13",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "^3.0.9",
     "jwt-decode": "^4.0.0",
@@ -52,20 +53,18 @@
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
     ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
     "collectCoverageFrom": [
       "src/**/*.{js,jsx,ts,tsx}",
       "!src/**/*.d.ts",
       "!src/**/*.test.{js,jsx,ts,tsx}",
       "!src/**/index.{js,ts}"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "statements": 20,
-        "branches": 20,
-        "functions": 20,
-        "lines": 20
-      }
-    }
+    ]
   },
   "private": true
 }

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Order, OrderStatus } from '../types';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency, formatDateTime } from '../utils/format';
 
 interface OrderListItemProps {
@@ -17,20 +18,25 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
     onStatusChange,
     showActions = false,
 }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
             case OrderStatus.COMPLETED:
-                return COLORS.success;
+                return theme.success;
             case OrderStatus.PROCESSING:
-                return COLORS.secondary;
+                return theme.secondary;
             case OrderStatus.PENDING:
-                return COLORS.warning;
+                return theme.warning;
             case OrderStatus.CANCELLED:
-                return COLORS.error;
+                return theme.error;
             default:
-                return COLORS.textSecondary;
+                return theme.textSecondary;
         }
     };
+
+    const statusColor = getStatusColor(order.status);
 
     return (
         <TouchableOpacity
@@ -45,8 +51,8 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
                         {order.billingInfo.firstName} {order.billingInfo.lastName}
                     </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+                    <Text style={[styles.statusText, { color: statusColor }]}>
                         {order.status}
                     </Text>
                 </View>
@@ -79,7 +85,7 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
                 <View style={styles.actions}>
                     {order.status === OrderStatus.PENDING && (
                         <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
+                            style={[styles.actionButton, { backgroundColor: theme.secondary }]}
                             onPress={() => onStatusChange(order.id, OrderStatus.PROCESSING)}
                         >
                             <Text style={styles.actionButtonText}>Process</Text>
@@ -87,14 +93,14 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
                     )}
                     {order.status === OrderStatus.PROCESSING && (
                         <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: COLORS.success }]}
+                            style={[styles.actionButton, { backgroundColor: theme.success }]}
                             onPress={() => onStatusChange(order.id, OrderStatus.COMPLETED)}
                         >
                             <Text style={styles.actionButtonText}>Complete</Text>
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: COLORS.error }]}
+                        style={[styles.actionButton, { backgroundColor: theme.error }]}
                         onPress={() => onStatusChange(order.id, OrderStatus.CANCELLED)}
                     >
                         <Text style={styles.actionButtonText}>Cancel</Text>
@@ -105,92 +111,102 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     container: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 12,
-        padding: SPACING.md,
+        backgroundColor: theme.surface,
+        borderRadius: 16,
+        padding: SPACING.lg,
         marginBottom: SPACING.md,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: theme.border,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 5,
+        elevation: isDark ? 0 : 2,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: SPACING.sm,
+        marginBottom: SPACING.md,
     },
     orderInfo: {
         flex: 1,
     },
     orderId: {
-        fontSize: TYPOGRAPHY.fontSize.md,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: SPACING.xs,
+        fontSize: 16,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+        marginBottom: 2,
     },
     customerName: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
+        fontSize: 13,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     statusBadge: {
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: SPACING.xs,
-        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
     },
     statusText: {
-        fontSize: TYPOGRAPHY.fontSize.xs,
-        fontWeight: '600',
+        fontSize: 11,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        textTransform: 'uppercase',
     },
     details: {
-        marginBottom: SPACING.sm,
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+        borderRadius: 12,
+        padding: SPACING.md,
+        marginBottom: SPACING.md,
     },
     detailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: SPACING.xs,
+        marginBottom: 6,
     },
     label: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
+        fontSize: 13,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.regular,
     },
     value: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.text,
-        fontWeight: '500',
+        fontSize: 13,
+        color: theme.text,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
     },
     totalAmount: {
-        color: COLORS.primary,
-        fontWeight: '700',
-        fontSize: TYPOGRAPHY.fontSize.md,
+        color: theme.primary,
+        fontSize: 15,
     },
     footer: {
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        paddingTop: SPACING.sm,
+        borderTopColor: theme.border,
+        paddingTop: SPACING.md,
+        borderStyle: 'dashed',
     },
     address: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.text,
+        fontSize: 13,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     actions: {
         flexDirection: 'row',
-        marginTop: SPACING.sm,
-        gap: SPACING.sm,
+        marginTop: SPACING.lg,
+        gap: SPACING.md,
     },
     actionButton: {
         flex: 1,
-        paddingVertical: SPACING.sm,
-        borderRadius: 8,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
         alignItems: 'center',
     },
     actionButtonText: {
-        color: COLORS.surface,
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        fontWeight: '600',
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
     },
 });
 

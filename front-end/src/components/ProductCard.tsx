@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Image,
@@ -8,8 +8,9 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Product } from '../types';
-import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
 import { formatCurrency } from '../utils/format';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +19,9 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, style }) => {
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -56,24 +60,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, style }) =>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: theme.surface,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.border,
     marginBottom: SPACING.lg,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.1 : 0.05,
     shadowRadius: 12,
   },
   imageContainer: {
     width: '100%',
     height: 180,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
     overflow: 'hidden',
   },
   image: {
@@ -86,13 +90,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: 4,
   },
   brand: {
     fontSize: 14,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginBottom: SPACING.md,
   },
   footer: {
@@ -104,20 +108,20 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   stockBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   lowStockBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)',
   },
   stockText: {
     fontSize: 12,
-    color: COLORS.text,
+    color: theme.text,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });

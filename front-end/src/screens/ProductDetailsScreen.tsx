@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Product } from '../types';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import ProductService from '../services/productService';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
-import { COLORS, SPACING, TYPOGRAPHY, SUCCESS_MESSAGES } from '../constants';
+import { SPACING, TYPOGRAPHY, SUCCESS_MESSAGES } from '../constants';
 import { formatCurrency } from '../utils/format';
 
 type ProductDetailsRouteProp = RouteProp<RootStackParamList, 'ProductDetails'>;
@@ -24,10 +25,13 @@ const ProductDetailsScreen: React.FC = () => {
   const route = useRoute<ProductDetailsRouteProp>();
   const navigation = useNavigation<ProductDetailsNavigationProp>();
   const { addToCart, isInCart, getItemQuantity } = useCart();
+  const { theme, isDark } = useTheme();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   useEffect(() => {
     loadProduct();
@@ -79,7 +83,7 @@ const ProductDetailsScreen: React.FC = () => {
   if (!product) {
     return (
       <View style={styles.container}>
-        <Text>Product not found</Text>
+        <Text style={styles.description}>Product not found</Text>
       </View>
     );
   }
@@ -134,22 +138,17 @@ const ProductDetailsScreen: React.FC = () => {
                 Per {product.nutritionalInfo.servingSize}
               </Text>
               <View style={styles.nutritionGrid}>
-                <NutritionItem
-                  label="Calories"
-                  value={`${product.nutritionalInfo.calories} kcal`}
-                />
-                <NutritionItem
-                  label="Protein"
-                  value={`${product.nutritionalInfo.protein}g`}
-                />
-                <NutritionItem
-                  label="Carbs"
-                  value={`${product.nutritionalInfo.carbohydrates}g`}
-                />
-                <NutritionItem
-                  label="Fat"
-                  value={`${product.nutritionalInfo.fat}g`}
-                />
+                {Object.entries({
+                  Calories: `${product.nutritionalInfo.calories} kcal`,
+                  Protein: `${product.nutritionalInfo.protein}g`,
+                  Carbs: `${product.nutritionalInfo.carbohydrates}g`,
+                  Fat: `${product.nutritionalInfo.fat}g`,
+                }).map(([label, value]) => (
+                  <View key={label} style={styles.nutritionItem}>
+                    <Text style={styles.nutritionLabel}>{label}</Text>
+                    <Text style={styles.nutritionValue}>{value}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
@@ -207,17 +206,11 @@ const ProductDetailsScreen: React.FC = () => {
   );
 };
 
-const NutritionItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <View style={styles.nutritionItem}>
-    <Text style={styles.nutritionLabel}>{label}</Text>
-    <Text style={styles.nutritionValue}>{value}</Text>
-  </View>
-);
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
@@ -225,7 +218,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 300,
-    backgroundColor: COLORS.surface,
+    backgroundColor: theme.surface,
   },
   detailsContainer: {
     padding: SPACING.lg,
@@ -244,18 +237,18 @@ const styles = StyleSheet.create({
   name: {
     fontSize: TYPOGRAPHY.fontSize.xxl,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.xs,
   },
   brand: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   price: {
     fontSize: TYPOGRAPHY.fontSize.xl,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   infoRow: {
     flexDirection: 'row',
@@ -266,16 +259,16 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginBottom: SPACING.xs,
   },
   infoValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
   },
   lowStock: {
-    color: COLORS.warning,
+    color: theme.warning,
   },
   section: {
     marginBottom: SPACING.lg,
@@ -283,17 +276,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.sm,
   },
   description: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text,
+    color: theme.text,
     lineHeight: 24,
   },
   servingSize: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginBottom: SPACING.md,
   },
   nutritionGrid: {
@@ -308,30 +301,36 @@ const styles = StyleSheet.create({
   },
   nutritionLabel: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
+    marginBottom: 2,
   },
   nutritionValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: theme.text,
   },
   inCartNotice: {
-    backgroundColor: COLORS.success + '20',
+    backgroundColor: theme.success + '20',
     padding: SPACING.md,
     borderRadius: 8,
     marginTop: SPACING.md,
   },
   inCartText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.success,
+    color: theme.success,
     fontWeight: '600',
     textAlign: 'center',
   },
   footer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: theme.surface,
     padding: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: isDark ? 0 : 5,
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -342,7 +341,7 @@ const styles = StyleSheet.create({
   quantityLabel: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.text,
+    color: theme.text,
   },
   quantityControls: {
     flexDirection: 'row',
@@ -355,11 +354,12 @@ const styles = StyleSheet.create({
   quantity: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontWeight: '700',
-    color: COLORS.text,
+    color: theme.text,
     marginHorizontal: SPACING.lg,
     minWidth: 30,
     textAlign: 'center',
   },
 });
+
 
 export default ProductDetailsScreen;

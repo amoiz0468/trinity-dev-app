@@ -49,7 +49,7 @@ export const validatePhone = (phone: string): boolean => {
 
 export const validateZipCode = (zipCode: string): boolean => {
   // Support US and common international formats
-  const zipRegex = /^[0-9]{5}(-[0-9]{4})?$|^[A-Z0-9]{3,10}$/i;
+  const zipRegex = /^[0-9]{5}(?:-[0-9]{4})?$|^[a-zA-Z0-9]{4,10}$/;
   return zipRegex.test(zipCode);
 };
 
