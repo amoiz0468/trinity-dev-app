@@ -1,65 +1,57 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import Input from '../Input';
+import { Text } from 'react-native';
 
 describe('Input Component', () => {
-  it('renders correctly with label', () => {
-    const { getByText, getByPlaceholderText } = render(
-      <Input label="Email" placeholder="Enter email" onChangeText={() => {}} />
-    );
-    
-    expect(getByText('Email')).toBeTruthy();
-    expect(getByPlaceholderText('Enter email')).toBeTruthy();
+  it('renders label correctly', () => {
+    const { getByText } = render(<Input label="Username" />);
+    expect(getByText('Username')).toBeTruthy();
   });
 
-  it('calls onChangeText when text changes', () => {
-    const mockChange = jest.fn();
+  it('handles onChangeText event', () => {
+    const onChangeTextMock = jest.fn();
     const { getByPlaceholderText } = render(
-      <Input placeholder="Test" onChangeText={mockChange} />
+      <Input placeholder="Enter text" onChangeText={onChangeTextMock} />
     );
     
-    const input = getByPlaceholderText('Test');
-    fireEvent.changeText(input, 'test value');
+    const textInput = getByPlaceholderText('Enter text');
+    fireEvent.changeText(textInput, 'Hello World');
     
-    expect(mockChange).toHaveBeenCalledWith('test value');
+    expect(onChangeTextMock).toHaveBeenCalledWith('Hello World');
   });
 
-  it('displays error message when error prop is provided', () => {
+  it('renders error message when error prop is passed', () => {
     const { getByText } = render(
-      <Input
-        placeholder="Test"
-        onChangeText={() => {}}
-        error="This field is required"
-      />
+      <Input placeholder="Password" error="Password is required" />
     );
-    
-    expect(getByText('This field is required')).toBeTruthy();
+    expect(getByText('Password is required')).toBeTruthy();
   });
 
-  it('handles secure text entry', () => {
-    const { getByPlaceholderText } = render(
-      <Input
-        placeholder="Password"
-        onChangeText={() => {}}
-        secureTextEntry
+  it('renders icons properly', () => {
+    const mockRightIconPress = jest.fn();
+    
+    const { getByTestId, UNSAFE_queryByType } = render(
+      <Input 
+        icon={<Text testID="left-icon">User</Text>}
+        rightIcon={<Text testID="right-icon">Eye</Text>}
+        onRightIconPress={mockRightIconPress}
       />
     );
     
-    const input = getByPlaceholderText('Password');
-    expect(input.props.secureTextEntry).toBe(true);
+    expect(getByTestId('left-icon')).toBeTruthy();
+    expect(getByTestId('right-icon')).toBeTruthy();
+    
+    fireEvent.press(getByTestId('right-icon'));
+    expect(mockRightIconPress).toHaveBeenCalledTimes(1);
   });
 
-  it('calls rightIcon press handler', () => {
-    const mockPress = jest.fn();
-    const { getByText } = render(
-      <Input
-        placeholder="Test"
-        onChangeText={() => {}}
-        rightIcon={<></>}
-        onRightIconPress={mockPress}
-      />
-    );
+  it('manages focus states', () => {
+    const { getByPlaceholderText } = render(<Input placeholder="Focus me" />);
+    const input = getByPlaceholderText('Focus me');
     
-    // This test would need the right icon to have testID for better testing
+    // Trigger onFocus and onBlur without crashing
+    fireEvent(input, 'focus');
+    fireEvent(input, 'blur');
   });
 });

@@ -1,55 +1,64 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import Button from '../Button';
+import { COLORS } from '../../constants';
 
 describe('Button Component', () => {
   it('renders correctly with title', () => {
-    const { getByText } = render(
-      <Button title="Test Button" onPress={() => {}} />
-    );
-    expect(getByText('Test Button')).toBeTruthy();
+    const { getByText } = render(<Button title="Click Me" onPress={() => {}} />);
+    expect(getByText('Click Me')).toBeTruthy();
   });
 
-  it('calls onPress when pressed', () => {
-    const mockPress = jest.fn();
-    const { getByText } = render(
-      <Button title="Test Button" onPress={mockPress} />
+  it('handles onPress event', () => {
+    const onPressMock = jest.fn();
+    const { getByText } = render(<Button title="Press Test" onPress={onPressMock} />);
+    
+    fireEvent.press(getByText('Press Test'));
+    expect(onPressMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('displays loading indicator and disables press when loading is true', () => {
+    const onPressMock = jest.fn();
+    const { getByRole, queryByText } = render(
+      <Button title="Loading Button" loading={true} onPress={onPressMock} />
+    );
+
+    // The text should not be visible when loading
+    expect(queryByText('Loading Button')).toBeNull();
+    
+    // The button must be disabled and busy
+    const button = getByRole('button', { busy: true });
+    expect(button).toBeTruthy();
+    
+    fireEvent.press(button);
+    expect(onPressMock).not.toHaveBeenCalled();
+  });
+
+  it('disables press when disabled is true', () => {
+    const onPressMock = jest.fn();
+    const { getByText, getByRole } = render(
+      <Button title="Disabled Button" disabled={true} onPress={onPressMock} />
     );
     
-    fireEvent.press(getByText('Test Button'));
-    expect(mockPress).toHaveBeenCalledTimes(1);
-  });
-
-  it('is disabled when disabled prop is true', () => {
-    const mockPress = jest.fn();
-    const { getByText } = render(
-      <Button title="Test Button" onPress={mockPress} disabled />
-    );
+    const buttonNode = getByRole('button', { disabled: true });
+    expect(buttonNode).toBeTruthy();
     
-    const button = getByText('Test Button').parent?.parent;
-    expect(button?.props.accessibilityState?.disabled).toBe(true);
+    fireEvent.press(getByText('Disabled Button'));
+    expect(onPressMock).not.toHaveBeenCalled();
   });
 
-  it('shows loading indicator when loading', () => {
-    const { queryByText, UNSAFE_getByType } = render(
-      <Button title="Test Button" onPress={() => {}} loading />
-    );
-    
-    expect(queryByText('Test Button')).toBeNull();
-    expect(UNSAFE_getByType('ActivityIndicator')).toBeTruthy();
-  });
-
-  it('applies correct variant styles', () => {
+  it('renders different visual variants correctly', () => {
     const { getByText, rerender } = render(
-      <Button title="Test" onPress={() => {}} variant="primary" />
+      <Button title="Primary" variant="primary" onPress={() => {}} />
     );
+    // Ideally we would check styles, but testing-library/react-native styles check is complex
+    // We just ensure it renders without crashing
+    expect(getByText('Primary')).toBeTruthy();
+
+    rerender(<Button title="Outline" variant="outline" onPress={() => {}} />);
+    expect(getByText('Outline')).toBeTruthy();
     
-    expect(getByText('Test')).toBeTruthy();
-    
-    rerender(<Button title="Test" onPress={() => {}} variant="secondary" />);
-    expect(getByText('Test')).toBeTruthy();
-    
-    rerender(<Button title="Test" onPress={() => {}} variant="outline" />);
-    expect(getByText('Test')).toBeTruthy();
+    rerender(<Button title="Danger" variant="danger" onPress={() => {}} />);
+    expect(getByText('Danger')).toBeTruthy();
   });
 });
