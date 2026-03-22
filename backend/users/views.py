@@ -149,36 +149,76 @@ class CurrentUserView(APIView):
         })
 
     def patch(self, request):
-        customer = Customer.objects.filter(user=request.user).first()
-        if not customer:
-            return Response({'detail': 'Customer profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CustomerCreateSerializer(customer, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        new_email = serializer.validated_data.get('email')
-        if new_email and User.objects.exclude(id=request.user.id).filter(username=new_email).exists():
-            return Response({'detail': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        if 'email' in serializer.validated_data:
-            request.user.email = serializer.validated_data['email']
-            request.user.username = serializer.validated_data['email']
-            request.user.save(update_fields=['email', 'username'])
-        return Response(CustomerSerializer(customer).data)
+        user = request.user
+        customer = Customer.objects.filter(user=user).first()
+        
+        # 1. Update User fields directly
+        user_fields_to_update = []
+        if 'email' in request.data:
+            new_email = request.data['email']
+            if User.objects.exclude(id=user.id).filter(Q(username=new_email) | Q(email=new_email)).exists():
+                return Response({'detail': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = new_email
+            user.username = new_email
+            user_fields_to_update.extend(['email', 'username'])
+        
+        if 'first_name' in request.data:
+            user.first_name = request.data['first_name']
+            user_fields_to_update.append('first_name')
+            
+        if 'last_name' in request.data:
+            user.last_name = request.data['last_name']
+            user_fields_to_update.append('last_name')
+            
+        if user_fields_to_update:
+            user.save(update_fields=user_fields_to_update)
+            
+        # 2. Update Customer if it exists
+        if customer:
+            serializer = CustomerCreateSerializer(customer, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            
+        return Response({
+            'user': UserSerializer(user).data,
+            'customer': CustomerSerializer(customer).data if customer else None,
+        })
 
     def put(self, request):
-        customer = Customer.objects.filter(user=request.user).first()
-        if not customer:
-            return Response({'detail': 'Customer profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CustomerCreateSerializer(customer, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        new_email = serializer.validated_data.get('email')
-        if new_email and User.objects.exclude(id=request.user.id).filter(username=new_email).exists():
-            return Response({'detail': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        if 'email' in serializer.validated_data:
-            request.user.email = serializer.validated_data['email']
-            request.user.username = serializer.validated_data['email']
-            request.user.save(update_fields=['email', 'username'])
-        return Response(CustomerSerializer(customer).data)
+        user = request.user
+        customer = Customer.objects.filter(user=user).first()
+        
+        # 1. Update User fields
+        user_fields_to_update = []
+        if 'email' in request.data:
+            new_email = request.data['email']
+            if User.objects.exclude(id=user.id).filter(Q(username=new_email) | Q(email=new_email)).exists():
+                return Response({'detail': 'Email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = new_email
+            user.username = new_email
+            user_fields_to_update.extend(['email', 'username'])
+        
+        if 'first_name' in request.data:
+            user.first_name = request.data['first_name']
+            user_fields_to_update.append('first_name')
+            
+        if 'last_name' in request.data:
+            user.last_name = request.data['last_name']
+            user_fields_to_update.append('last_name')
+            
+        if user_fields_to_update:
+            user.save(update_fields=user_fields_to_update)
+            
+        # 2. Update Customer if it exists
+        if customer:
+            serializer = CustomerCreateSerializer(customer, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            
+        return Response({
+            'user': UserSerializer(user).data,
+            'customer': CustomerSerializer(customer).data if customer else None,
+        })
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
