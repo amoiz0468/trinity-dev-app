@@ -11,7 +11,7 @@ import {
 import { Notification } from '../types';
 import { SPACING, TYPOGRAPHY } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatRelativeTime } from '../utils/format';
+import { formatRelativeTime, formatDate } from '../utils/format';
 
 interface NotificationCenterProps {
   isVisible: boolean;
@@ -61,6 +61,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <Text style={[styles.notificationMessage, { color: theme.textSecondary }]} numberOfLines={2}>
           {item.message}
         </Text>
+        {item.type === 'promotion' && item.expiresAt && (
+          <Text style={[styles.notificationMeta, { color: theme.textSecondary }]}>Valid until {formatDate(item.expiresAt)}</Text>
+        )}
       </View>
       {!item.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
@@ -168,6 +171,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: TYPOGRAPHY.fontFamily.regular,
     lineHeight: 20,
+  },
+  notificationMeta: {
+    fontSize: 12,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    marginTop: 6,
   },
   unreadDot: {
     width: 8,

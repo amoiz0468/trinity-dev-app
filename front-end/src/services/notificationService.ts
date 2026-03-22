@@ -14,6 +14,7 @@ class NotificationService {
       message: data.message || '',
       type: data.type || 'info',
       isRead: Boolean(data.is_read),
+      expiresAt: data.expires_at || null,
       createdAt: data.created_at || new Date().toISOString(),
     };
   }

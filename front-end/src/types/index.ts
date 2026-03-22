@@ -177,6 +177,7 @@ export interface Notification {
   message: string;
   type: 'info' | 'promotion' | 'alert' | 'system';
   isRead: boolean;
+  expiresAt?: string | null;
   createdAt: string;
 }
 
