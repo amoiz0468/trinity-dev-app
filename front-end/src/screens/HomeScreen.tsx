@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -27,20 +28,34 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, logout } = useAuth();
   const { cart, clearCart } = useCart();
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortByPrice, setSortByPrice] = useState<'none' | 'asc' | 'desc'>('none');
+  const [categories, setCategories] = useState<string[]>(['All']);
 
   useEffect(() => {
-    loadFeaturedProducts();
-  }, []);
+    loadProducts();
+  }, [searchQuery, selectedCategory]);
 
-  const loadFeaturedProducts = async () => {
+  const loadProducts = async () => {
     try {
-      const products = await ProductService.getFeaturedProducts(10);
-      setFeaturedProducts(products);
+      const fetchedProducts = await ProductService.getProducts({
+        search: searchQuery || undefined,
+        category: selectedCategory !== 'All' ? selectedCategory : undefined,
+      });
+
+      // Extract unique categories for the filters if it's the first load
+      if (categories.length === 1 && !searchQuery && selectedCategory === 'All') {
+        const uniqueCategories = Array.from(new Set(fetchedProducts.map(p => p.category).filter(Boolean)));
+        setCategories(['All', ...uniqueCategories]);
+      }
+
+      setProducts(fetchedProducts);
     } catch (error) {
-      console.error('Error loading featured products:', error);
+      console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }
@@ -48,8 +63,15 @@ const HomeScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadFeaturedProducts();
+    await loadProducts();
     setRefreshing(false);
+  };
+
+  const getSortedProducts = () => {
+    if (sortByPrice === 'none') return products;
+    return [...products].sort((a, b) => 
+      sortByPrice === 'asc' ? a.price - b.price : b.price - a.price
+    );
   };
 
   const handleProductPress = (product: Product) => {
@@ -69,7 +91,6 @@ const HomeScreen: React.FC = () => {
             try {
               await logout();
               await clearCart();
-              navigation.navigate('Login' as never);
             } catch (error: any) {
               Alert.alert('Error', error.message || 'Failed to logout');
             }
@@ -173,17 +194,48 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Featured Products */}
+        {/* Products Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Products</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Our Products</Text>
           </View>
 
-          {featuredProducts.length > 0 ? (
-            featuredProducts.map(product => (
+          {/* Filters */}
+          <View style={styles.filterContainer}>
+            <View style={styles.searchWrapper}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search products..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor={COLORS.textSecondary}
+              />
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+              {categories.map(cat => (
+                <TouchableOpacity 
+                  key={cat} 
+                  style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipSelected]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextSelected]}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.sortContainer}>
+              <TouchableOpacity style={styles.sortButton} onPress={() => setSortByPrice(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none')}>
+                <Text style={styles.sortText}>
+                  Price: {sortByPrice === 'none' ? 'Default' : sortByPrice === 'asc' ? 'Low to High ↑' : 'High to Low ↓'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {getSortedProducts().length > 0 ? (
+            getSortedProducts().map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -191,20 +243,10 @@ const HomeScreen: React.FC = () => {
               />
             ))
           ) : (
-            <Text style={styles.emptyText}>No featured products available</Text>
+            <Text style={styles.emptyText}>No products found matching filters</Text>
           )}
         </View>
 
-        {/* Promotional Banner */}
-        <View style={styles.promoBanner}>
-          <Text style={styles.promoIcon}>🎉</Text>
-          <View style={styles.promoContent}>
-            <Text style={styles.promoTitle}>Special Offers!</Text>
-            <Text style={styles.promoText}>
-              Get up to 30% off on selected items
-            </Text>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -350,6 +392,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: SPACING.xl,
     fontStyle: 'italic',
+  },
+  filterContainer: {
+    marginBottom: SPACING.lg,
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: SPACING.sm,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    color: COLORS.text,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
+  },
+  categoriesScroll: {
+    flexDirection: 'row',
+    marginBottom: SPACING.md,
+  },
+  categoryChip: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  categoryChipSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryChipText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+  },
+  categoryChipTextSelected: {
+    color: '#FFF',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: SPACING.sm,
+  },
+  sortButton: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  sortText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   promoBanner: {
     flexDirection: 'row',

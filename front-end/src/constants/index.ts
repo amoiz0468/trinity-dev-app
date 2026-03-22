@@ -1,17 +1,47 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+
+const resolveApiBaseUrl = (): string => {
+  const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    return envUrl.replace(/\/+$/, '');
+  }
+
+  const hostUri =
+    (Constants as any)?.expoConfig?.hostUri ||
+    (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost ||
+    '';
+  const host = typeof hostUri === 'string' ? hostUri.split(':')[0] : '';
+
+  // Prefer Expo host IP for both physical devices and emulators.
+  if (host && host !== 'localhost' && host !== '127.0.0.1') {
+    return `http://${host}:8000/api`;
+  }
+
+  // Android emulator fallback when host IP isn't available.
+  if (Platform.OS === 'android' && !Constants.isDevice) {
+    return 'http://10.0.2.2:8000/api';
+  }
+
+  // Local simulator/web fallback.
+  return 'http://localhost:8000/api';
+};
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000/api', // Use localhost for Simulator
-  USE_MOCK_DATA: false, // Set to false to use the real backend
-  TIMEOUT: 15000,      // Increased timeout for remote connections
+  BASE_URL: resolveApiBaseUrl(),
+  USE_MOCK_DATA: false,
+  TIMEOUT: 15000,
 };
 
 // PayPal Configuration
 export const PAYPAL_CONFIG = {
-  CLIENT_ID: process.env.PAYPAL_CLIENT_ID || 'YOUR_PAYPAL_CLIENT_ID',
+  CLIENT_ID:
+    process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID ||
+    process.env.PAYPAL_CLIENT_ID ||
+    'YOUR_PAYPAL_CLIENT_ID',
   CURRENCY: 'USD',
-  ENVIRONMENT: 'sandbox', // Change to 'production' for live
+  ENVIRONMENT: process.env.PAYPAL_ENVIRONMENT || 'sandbox',
 };
 
 // App Colors (Sapphire Night Theme - Premium & Vibrant)
