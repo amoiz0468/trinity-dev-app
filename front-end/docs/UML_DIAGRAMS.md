@@ -4,147 +4,95 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         User                                      │
+│                              User                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │ - id: string                                                      │
 │ - email: string                                                   │
-│ - firstName: string                                               │
-│ - lastName: string                                                │
-│ - phone?: string                                                  │
-│ - createdAt: string                                               │
-├─────────────────────────────────────────────────────────────────┤
-│ + login(): Promise<AuthResponse>                                  │
-│ + signup(): Promise<AuthResponse>                                 │
-│ + logout(): Promise<void>                                         │
-│ + updateProfile(): Promise<User>                                  │
+│ - role: user | admin                                              │
 └─────────────────────────────────────────────────────────────────┘
-                               │
-                               │ 1
-                               │
-                               │ *
+            │ 1
+            │
+            │ 0..1
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Order                                     │
+│                           Customer                                │
 ├─────────────────────────────────────────────────────────────────┤
-│ - id: string                                                      │
-│ - userId: string                                                  │
+│ - first_name: string                                              │
+│ - last_name: string                                               │
+│ - phone_number: string                                            │
+│ - address: string                                                 │
+└─────────────────────────────────────────────────────────────────┘
+            │ 1
+            │
+            │ 1
+┌─────────────────────────────────────────────────────────────────┐
+│                              Cart                                 │
+├─────────────────────────────────────────────────────────────────┤
 │ - items: CartItem[]                                               │
-│ - totalAmount: number                                             │
-│ - billingInfo: BillingInfo                                        │
-│ - paymentMethod: string                                           │
-│ - status: OrderStatus                                             │
-│ - createdAt: string                                               │
-├─────────────────────────────────────────────────────────────────┤
-│ + createOrder(): Promise<Order>                                   │
-│ + getOrderById(): Promise<Order>                                  │
-│ + updateStatus(): Promise<Order>                                  │
-│ + cancelOrder(): Promise<Order>                                   │
+│ - subtotal: number                                                │
+│ - total_items: number                                             │
 └─────────────────────────────────────────────────────────────────┘
-                               │
-                               │ 1
-                               │
-                               │ *
+            │ 1
+            │
+            │ *
 ┌─────────────────────────────────────────────────────────────────┐
-│                       CartItem                                    │
+│                           CartItem                                │
 ├─────────────────────────────────────────────────────────────────┤
 │ - product: Product                                                │
 │ - quantity: number                                                │
-├─────────────────────────────────────────────────────────────────┤
-│ + calculateSubtotal(): number                                     │
+│ - unit_price: number                                              │
+│ - total_price: number                                             │
 └─────────────────────────────────────────────────────────────────┘
-                               │
-                               │ 1
-                               │
-                               │ 1
+            │ *
+            │
+            │ 1
 ┌─────────────────────────────────────────────────────────────────┐
-│                       Product                                     │
+│                            Product                                │
 ├─────────────────────────────────────────────────────────────────┤
-│ - id: string                                                      │
-│ - name: string                                                    │
-│ - barcode: string                                                 │
-│ - brand: string                                                   │
-│ - category: string                                                │
 │ - price: number                                                   │
-│ - imageUrl: string                                                │
-│ - description?: string                                            │
-│ - stock: number                                                   │
-│ - nutritionalInfo?: NutritionalInfo                               │
-├─────────────────────────────────────────────────────────────────┤
-│ + getProductByBarcode(): Promise<Product>                         │
-│ + getProductById(): Promise<Product>                              │
-│ + searchProducts(): Promise<Product[]>                            │
-│ + checkStock(): Promise<boolean>                                  │
+│ - current_price: number                                           │
+│ - quantity_in_stock: number                                       │
+│ - activePromotion?: Promotion                                     │
 └─────────────────────────────────────────────────────────────────┘
-                               │
-                               │ 1
-                               │
-                               │ 0..1
+            │ 0..*
+            │
+            │ 0..1
 ┌─────────────────────────────────────────────────────────────────┐
-│                    NutritionalInfo                                │
+│                           Promotion                               │
 ├─────────────────────────────────────────────────────────────────┤
-│ - calories: number                                                │
-│ - protein: number                                                 │
-│ - carbohydrates: number                                           │
-│ - fat: number                                                     │
-│ - fiber?: number                                                  │
-│ - sodium?: number                                                 │
-│ - sugar?: number                                                  │
-│ - servingSize: string                                             │
+│ - discount_percentage: number                                     │
+│ - start_date: datetime                                            │
+│ - end_date: datetime                                              │
+│ - product?: Product (null => global)                              │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Cart                                      │
+│                           Invoice                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│ - items: CartItem[]                                               │
-│ - totalAmount: number                                             │
-│ - totalItems: number                                              │
+│ - subtotal: number                                                │
+│ - tax_amount: number                                              │
+│ - total_amount: number                                            │
+│ - status: string                                                  │
+└─────────────────────────────────────────────────────────────────┘
+            │ 1
+            │
+            │ *
+┌─────────────────────────────────────────────────────────────────┐
+│                         InvoiceItem                               │
 ├─────────────────────────────────────────────────────────────────┤
-│ + addToCart(product, quantity): void                              │
-│ + removeFromCart(productId): void                                 │
-│ + updateQuantity(productId, quantity): void                       │
-│ + clearCart(): void                                               │
-│ + calculateTotal(): number                                        │
+│ - product_name: string                                            │
+│ - quantity: number                                                │
+│ - unit_price: number                                              │
+│ - total_price: number                                             │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                      BillingInfo                                  │
+│                         Notification                              │
 ├─────────────────────────────────────────────────────────────────┤
-│ - firstName: string                                               │
-│ - lastName: string                                                │
-│ - address: string                                                 │
-│ - zipCode: string                                                 │
-│ - city: string                                                    │
-│ - email?: string                                                  │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                    PaymentRequest                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ - amount: number                                                  │
-│ - currency: string                                                │
-│ - orderId: string                                                 │
-│ - billingInfo: BillingInfo                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ + initiatePayment(): Promise<PaymentResponse>                     │
-│ + executePayment(): Promise<PaymentResponse>                      │
-│ + verifyPayment(): Promise<boolean>                               │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                   PaymentResponse                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ - success: boolean                                                │
-│ - transactionId: string                                           │
-│ - message?: string                                                │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                     <<enumeration>>                               │
-│                      OrderStatus                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ PENDING                                                           │
-│ PROCESSING                                                        │
-│ COMPLETED                                                         │
-│ CANCELLED                                                         │
+│ - user?: User (null => global)                                    │
+│ - title: string                                                   │
+│ - message: string                                                 │
+│ - type: info | promotion | alert | system                         │
+│ - is_read: boolean                                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -239,6 +187,37 @@
     ┌───▼───┐
     │  End  │
     └───────┘
+```
+
+## Activity Diagram - Promotion Notification Flow
+
+```
+        ┌───────────────┐
+        │ Admin Creates │
+        │  Promotion    │
+        └───────┬───────┘
+              │
+        ┌───────▼────────┐
+        │ Promotion Saved│
+        └───────┬────────┘
+              │
+        ┌───────▼────────┐
+        │ Notification   │
+        │ (global)       │
+        └───────┬────────┘
+              │
+        ┌───────▼────────┐
+        │ User Fetches   │
+        │ Notifications  │
+        └───────┬────────┘
+              │
+        ┌───────▼────────┐
+        │ Badge Updates  │
+        └───────┬────────┘
+              │
+             ┌──▼──┐
+             │ End │
+             └─────┘
 ```
 
 ## Sequence Diagram - Barcode Scanning and Purchase

@@ -142,23 +142,35 @@
 - **Travis CI**: Less popular now
 - **Jenkins**: Self-hosted, more maintenance
 
-## Architecture Pattern: MVVM
+## Architecture Pattern: Context + Services (Frontend)
 
-### Why MVVM?
-- **Separation of Concerns**: Clear boundaries
-- **Testability**: Easy to unit test
-- **Scalability**: Easy to add features
-- **React-friendly**: Aligns with React patterns
-- **Team Understanding**: Common pattern
+### Why Context + Services?
+- **Separation of Concerns**: UI, state, and data access are isolated
+- **Testability**: Services and contexts are easily unit-tested
+- **React-friendly**: Matches hooks and Context API patterns
+- **Scalability**: Add services without touching UI layers
 
 ### Pattern Breakdown
 - **Model**: Types and data structures
 - **View**: React components
-- **ViewModel**: Context providers and hooks
+- **State Controllers**: Context providers and hooks
+- **Data Access**: Service layer (API clients)
 
 ### Alternatives Considered
-- **MVC**: Too coupled for React
-- **Clean Architecture**: Overkill for mobile app size
+- **MVVM**: Similar, but unnecessary abstraction in React Native
+- **Clean Architecture**: Overkill for app size
+
+## Backend Framework: Django + DRF
+
+### Why Django + DRF?
+- **Rapid Development**: Batteries-included framework
+- **Robust ORM**: Strong modeling for Products, Cart, Invoices, Promotions
+- **DRF ViewSets**: Clean REST endpoints
+- **Authentication**: SimpleJWT integration
+
+### Alternatives Considered
+- **Express**: Less structured for admin + business rules
+- **FastAPI**: Great performance, but Django admin + ORM are key needs
 
 ## Design System: Custom Components
 
