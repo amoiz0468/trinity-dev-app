@@ -92,6 +92,7 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     info: {
         flex: 1,
         marginLeft: SPACING.md,
+        paddingRight: SPACING.lg,
     },
     name: {
         fontSize: 16,
@@ -108,6 +109,7 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 6,
+        flexWrap: 'wrap',
     },
     price: {
         fontSize: 15,
@@ -133,6 +135,8 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     actions: {
         flexDirection: 'row',
         gap: 10,
+        alignSelf: 'flex-start',
+        marginTop: 4,
     },
     actionButton: {
         width: 36,
