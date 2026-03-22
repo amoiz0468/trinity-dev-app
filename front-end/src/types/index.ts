@@ -60,8 +60,11 @@ export interface NutritionalInfo {
 
 // Cart Types
 export interface CartItem {
+  id?: string;
   product: Product;
   quantity: number;
+  unit_price?: number;
+  total_price?: number;
 }
 
 export interface Cart {
