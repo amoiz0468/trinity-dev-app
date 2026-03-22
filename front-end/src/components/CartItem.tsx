@@ -24,8 +24,9 @@ const CartItem: React.FC<CartItemProps> = ({
   onDecrease,
   onRemove,
 }) => {
-  const { product, quantity } = item;
-  const subtotal = product.price * quantity;
+  const { product, quantity, unit_price, total_price } = item;
+  const subtotal = total_price || (unit_price || product.price) * quantity;
+  const unitPrice = unit_price || product.price;
   const { theme, isDark } = useTheme();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
@@ -46,7 +47,12 @@ const CartItem: React.FC<CartItemProps> = ({
           </TouchableOpacity>
         </View>
         <Text style={styles.brand}>{product.brand}</Text>
-        <Text style={styles.price}>{formatCurrency(product.price)}</Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>{formatCurrency(unitPrice)}</Text>
+          {unitPrice < product.price && (
+            <Text style={styles.originalPrice}>{formatCurrency(product.price)}</Text>
+          )}
+        </View>
 
         <View style={styles.footer}>
           <View style={styles.quantityContainer}>
@@ -122,6 +128,18 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     marginTop: 4,
+    fontFamily: TYPOGRAPHY.fontFamily.regular,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    textDecorationLine: 'line-through',
+    marginLeft: 8,
     fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   removeButton: {
