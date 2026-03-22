@@ -89,13 +89,7 @@ API_BASE_URL=https://your-api-url.com
 PAYPAL_CLIENT_ID=your_paypal_client_id
 ```
 
-## CI/CD
 
-The project includes a GitHub Actions workflow for:
-- Running unit tests
-- Code coverage reporting (minimum 20%)
-- Linting and type checking
-- Building the application
 
 ## Documentation
 
@@ -112,6 +106,4 @@ The project includes a GitHub Actions workflow for:
 4. Follow TypeScript best practices
 5. Document complex logic
 
-## License
 
-MIT License - Trinity Project 2026
