@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { MainTabParamList } from '../types';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import CartItem from '../components/CartItem';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency } from '../utils/format';
 
 type CartScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Cart'>;
@@ -22,6 +23,9 @@ type CartScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Cart'>;
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
+  const { theme, isDark } = useTheme();
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const handleIncrease = (productId: string) => {
     const item = cart.items.find(i => i.product.id === productId);
@@ -129,10 +133,10 @@ const CartScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
@@ -142,11 +146,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   footer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: theme.surface,
     padding: SPACING.xl,
     paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: isDark ? 0 : 5,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -155,12 +164,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   summaryValue: {
     fontSize: 16,
-    color: COLORS.text,
+    color: theme.text,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   totalRow: {
@@ -169,17 +178,17 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
     paddingTop: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: theme.border,
   },
   totalLabel: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
   },
   totalValue: {
     fontSize: TYPOGRAPHY.fontSize.xl,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { COLORS, SPACING, TYPOGRAPHY, SUCCESS_MESSAGES } from '../constants';
+import { SPACING, TYPOGRAPHY, SUCCESS_MESSAGES } from '../constants';
 import { validateEmail, validatePassword, validateName } from '../utils/validation';
 
 type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signup'>;
@@ -24,6 +25,7 @@ type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signu
 const SignupScreen: React.FC = () => {
   const navigation = useNavigation<SignupScreenNavigationProp>();
   const { signup } = useAuth();
+  const { theme, isDark } = useTheme();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -37,9 +39,10 @@ const SignupScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -102,7 +105,6 @@ const SignupScreen: React.FC = () => {
         phone: formData.phone.trim() || undefined,
       });
       Alert.alert('Success', SUCCESS_MESSAGES.SIGNUP_SUCCESS);
-      // Navigation will happen automatically via AuthContext
     } catch (error: any) {
       Alert.alert('Signup Failed', error.message || 'Failed to create account');
     } finally {
@@ -118,6 +120,7 @@ const SignupScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
           <View 
@@ -208,6 +211,7 @@ const SignupScreen: React.FC = () => {
             onPress={handleSignup}
             loading={loading}
             fullWidth
+            size="large"
             style={styles.signupButton}
           />
 
@@ -226,15 +230,16 @@ const SignupScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
     padding: SPACING.xl,
-    paddingTop: SPACING.xxl,
+    paddingTop: Platform.OS === 'ios' ? 60 : SPACING.xxl,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
@@ -244,12 +249,17 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
+    borderColor: isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.2)',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0.3 : 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   logo: {
     width: 50,
@@ -257,14 +267,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   title: {
-    fontSize: TYPOGRAPHY.fontSize.xxxl,
+    fontSize: 28,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: theme.textSecondary,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   form: {
@@ -274,21 +285,21 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   eyeIcon: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontSize: 20,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   loginText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontSize: 15,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   loginLink: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.primary,
+    fontSize: 15,
+    color: theme.primary,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });

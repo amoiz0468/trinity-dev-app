@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Customer } from '../types';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency, formatDate } from '../utils/format';
 
 interface CustomerListItemProps {
@@ -15,6 +16,9 @@ const CustomerListItem: React.FC<CustomerListItemProps> = ({
     onPress,
     onDelete,
 }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
     return (
         <TouchableOpacity
             style={styles.container}
@@ -59,9 +63,9 @@ const CustomerListItem: React.FC<CustomerListItemProps> = ({
                     <Text style={styles.statValue}>{customer.totalOrders}</Text>
                     <Text style={styles.statLabel}>Orders</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                    <Text style={[styles.statValue, { color: COLORS.primary }]}>
+                    <Text style={[styles.statValue, { color: theme.primary }]}>
                         {formatCurrency(customer.lifetimeValue)}
                     </Text>
                     <Text style={styles.statLabel}>Lifetime Value</Text>
@@ -84,17 +88,19 @@ const CustomerListItem: React.FC<CustomerListItemProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     container: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 12,
+        backgroundColor: theme.surface,
+        borderRadius: 16,
         padding: SPACING.md,
         marginBottom: SPACING.md,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: theme.border,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 5,
+        elevation: isDark ? 0 : 2,
     },
     header: {
         flexDirection: 'row',
@@ -108,37 +114,43 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: COLORS.primary,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: theme.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: SPACING.md,
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
     },
     avatarText: {
-        fontSize: TYPOGRAPHY.fontSize.lg,
-        fontWeight: '700',
-        color: COLORS.surface,
+        fontSize: 18,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: '#FFFFFF',
     },
     customerInfo: {
         flex: 1,
         justifyContent: 'center',
     },
     name: {
-        fontSize: TYPOGRAPHY.fontSize.md,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: SPACING.xs,
+        fontSize: 16,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+        marginBottom: 2,
     },
     email: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
+        fontSize: 13,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
         marginBottom: 2,
     },
     phone: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
+        fontSize: 13,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.regular,
     },
     deleteButton: {
         justifyContent: 'center',
@@ -146,52 +158,58 @@ const styles = StyleSheet.create({
     },
     deleteIconText: {
         fontSize: 20,
-        color: COLORS.error,
     },
     stats: {
         flexDirection: 'row',
-        backgroundColor: COLORS.background,
-        borderRadius: 8,
+        backgroundColor: theme.background,
+        borderRadius: 12,
         padding: SPACING.md,
         marginBottom: SPACING.sm,
+        borderWidth: 1,
+        borderColor: theme.border,
     },
     statItem: {
         flex: 1,
         alignItems: 'center',
     },
-    divider: {
+    statDivider: {
         width: 1,
-        backgroundColor: COLORS.border,
+        backgroundColor: theme.border,
         marginHorizontal: SPACING.md,
     },
     statValue: {
-        fontSize: TYPOGRAPHY.fontSize.lg,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: SPACING.xs,
+        fontSize: 18,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
+        color: theme.text,
+        marginBottom: 2,
     },
     statLabel: {
-        fontSize: TYPOGRAPHY.fontSize.xs,
-        color: COLORS.textSecondary,
+        fontSize: 11,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     footer: {
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+        borderTopColor: theme.border,
         paddingTop: SPACING.sm,
+        marginTop: SPACING.xs,
     },
     footerItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: SPACING.xs,
+        marginBottom: 2,
     },
     footerLabel: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
+        fontSize: 12,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.regular,
     },
     footerValue: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.text,
-        fontWeight: '500',
+        fontSize: 12,
+        color: theme.text,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
 });
 

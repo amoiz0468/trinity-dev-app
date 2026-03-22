@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,17 +10,16 @@ import {
 import { CameraView, Camera } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { MainTabParamList, Product } from '../types';
+import { MainTabParamList } from '../types';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import ProductService from '../services/productService';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import {
-  COLORS,
   SPACING,
   TYPOGRAPHY,
   ERROR_MESSAGES,
-  SUCCESS_MESSAGES,
   APP_CONSTANTS,
 } from '../constants';
 
@@ -29,10 +28,13 @@ type ScannerScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Scan'>
 const ScannerScreen: React.FC = () => {
   const navigation = useNavigation<ScannerScreenNavigationProp>();
   const { addToCart } = useCart();
+  const { theme, isDark } = useTheme();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [torch, setTorch] = useState(false);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   useEffect(() => {
     requestCameraPermission();
@@ -54,7 +56,7 @@ const ScannerScreen: React.FC = () => {
     }
   };
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
     if (scanned || loading) return;
 
     setScanned(true);
@@ -62,10 +64,7 @@ const ScannerScreen: React.FC = () => {
     Vibration.vibrate(100);
 
     try {
-      // Fetch product by barcode
       const product = await ProductService.getProductByBarcode(data);
-
-      // Add to cart
       addToCart(product, 1);
 
       Alert.alert(
@@ -144,14 +143,12 @@ const ScannerScreen: React.FC = () => {
         enableTorch={torch}
       >
         <View style={styles.overlay}>
-          {/* Top Section */}
           <View style={styles.topSection}>
             <Text style={styles.instructionText}>
               Position barcode within the frame
             </Text>
           </View>
 
-          {/* Scanning Frame */}
           <View style={styles.scanningArea}>
             <View style={styles.scanFrame}>
               <View style={[styles.corner, styles.cornerTopLeft]} />
@@ -161,7 +158,6 @@ const ScannerScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Bottom Section */}
           <View style={styles.bottomSection}>
             {loading && (
               <View style={styles.loadingContainer}>
@@ -197,17 +193,17 @@ const ScannerScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.text,
+    backgroundColor: theme.background,
   },
   camera: {
     flex: 1,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   topSection: {
     flex: 1,
@@ -220,6 +216,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     fontFamily: TYPOGRAPHY.fontFamily.bold,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
   },
   scanningArea: {
     justifyContent: 'center',
@@ -234,36 +233,40 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 30,
     height: 30,
-    borderColor: COLORS.primary,
+    borderColor: theme.primary,
   },
   cornerTopLeft: {
     top: 0,
     left: 0,
     borderTopWidth: 4,
     borderLeftWidth: 4,
+    borderTopLeftRadius: 12,
   },
   cornerTopRight: {
     top: 0,
     right: 0,
     borderTopWidth: 4,
     borderRightWidth: 4,
+    borderTopRightRadius: 12,
   },
   cornerBottomLeft: {
     bottom: 0,
     left: 0,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
+    borderBottomLeftRadius: 12,
   },
   cornerBottomRight: {
     bottom: 0,
     right: 0,
     borderBottomWidth: 4,
     borderRightWidth: 4,
+    borderBottomRightRadius: 12,
   },
   bottomSection: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: SPACING.xxl,
+    paddingBottom: SPACING.xxl * 1.5,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -282,21 +285,27 @@ const styles = StyleSheet.create({
   controlButton: {
     alignItems: 'center',
     padding: SPACING.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    minWidth: 90,
   },
   controlIcon: {
-    fontSize: 32,
+    fontSize: 28,
     marginBottom: SPACING.xs,
   },
   controlText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
+    fontSize: 12,
     color: '#FFFFFF',
     fontFamily: TYPOGRAPHY.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   permissionText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text,
+    color: theme.text,
     textAlign: 'center',
     padding: SPACING.xl,
+    lineHeight: 24,
   },
   permissionButton: {
     marginHorizontal: SPACING.xl,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -8,7 +8,8 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -36,7 +37,10 @@ const Button: React.FC<ButtonProps> = ({
   accessibilityLabel,
   ...props
 }) => {
+  const { theme } = useTheme();
   const isDisabled = disabled || loading;
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <TouchableOpacity
@@ -58,7 +62,7 @@ const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? COLORS.primary : '#FFFFFF'}
+          color={variant === 'outline' ? theme.primary : '#FFFFFF'}
         />
       ) : (
         <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
@@ -69,7 +73,7 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -85,18 +89,18 @@ const styles = StyleSheet.create({
   },
   // Variants
   primary: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.primary,
   },
   secondary: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: theme.secondary,
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: theme.primary,
   },
   danger: {
-    backgroundColor: COLORS.error,
+    backgroundColor: theme.error,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   disabled: {
-    backgroundColor: COLORS.disabled,
+    backgroundColor: theme.disabled,
     opacity: 0.6,
   },
   // Text styles
@@ -139,7 +143,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   outlineText: {
-    color: COLORS.primary,
+    color: theme.primary,
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   dangerText: {
@@ -147,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   ghostText: {
-    color: COLORS.primary,
+    color: theme.primary,
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   smallText: {

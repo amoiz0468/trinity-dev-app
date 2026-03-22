@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,21 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Order } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 import OrderService from '../services/orderService';
 import Loading from '../components/Loading';
 import EmptyState from '../components/EmptyState';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency, formatDateTime } from '../utils/format';
 
 const OrderHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { theme, isDark } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   useEffect(() => {
     loadOrders();
@@ -45,13 +49,13 @@ const OrderHistoryScreen: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return COLORS.success;
+        return theme.success;
       case 'PROCESSING':
-        return COLORS.secondary;
+        return theme.secondary;
       case 'CANCELLED':
-        return COLORS.error;
+        return theme.error;
       default:
-        return COLORS.textSecondary;
+        return theme.textSecondary;
     }
   };
 
@@ -115,81 +119,91 @@ const OrderHistoryScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
         }
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   listContent: {
     padding: SPACING.md,
     paddingBottom: 40,
   },
   orderCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: SPACING.md,
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    padding: SPACING.lg,
     marginBottom: SPACING.md,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: theme.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 5,
+    elevation: isDark ? 0 : 2,
   },
   orderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   orderId: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
   },
   orderDate: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    color: theme.textSecondary,
+    marginTop: 4,
   },
   statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   statusText: {
-    fontSize: TYPOGRAPHY.fontSize.xs,
+    fontSize: 11,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
+    letterSpacing: 0.5,
   },
   orderDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   itemCount: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   orderTotal: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   orderFooter: {
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: SPACING.sm,
+    borderTopColor: theme.border,
+    paddingTop: SPACING.md,
   },
   deliveryAddress: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
 });
 

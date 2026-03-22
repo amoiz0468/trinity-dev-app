@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,11 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, BillingInfo } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import OrderService from '../services/orderService';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency } from '../utils/format';
 import {
   validateRequired,
@@ -30,8 +31,9 @@ type CheckoutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Che
 
 const CheckoutScreen: React.FC = () => {
   const navigation = useNavigation<CheckoutScreenNavigationProp>();
-  const { cart, clearCart } = useCart();
+  const { cart } = useCart();
   const { user } = useAuth();
+  const { theme, isDark } = useTheme();
 
   const [billingInfo, setBillingInfo] = useState<BillingInfo>({
     firstName: user?.firstName || '',
@@ -43,6 +45,8 @@ const CheckoutScreen: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const updateField = (field: keyof BillingInfo, value: string) => {
     setBillingInfo(prev => ({ ...prev, [field]: value }));
@@ -86,13 +90,10 @@ const CheckoutScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      // Create order
       const order = await OrderService.createOrder(cart.items, billingInfo);
       if (!order?.id) {
         throw new Error('Order created but invalid order id was returned');
       }
-
-      // Navigate to payment screen
       navigation.navigate('Payment', { orderId: order.id });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create order');
@@ -215,26 +216,32 @@ const CheckoutScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
     padding: SPACING.lg,
-    paddingBottom: 40,
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 16,
     padding: SPACING.lg,
     marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 5,
+    elevation: isDark ? 0 : 2,
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.md,
   },
   row: {
@@ -252,34 +259,36 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   summaryValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text,
+    color: theme.text,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   totalRow: {
     marginTop: SPACING.md,
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.border,
   },
   totalLabel: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
   },
   totalValue: {
     fontSize: TYPOGRAPHY.fontSize.xl,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   footer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: theme.surface,
     padding: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.border,
+    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.lg,
   },
 });
 
