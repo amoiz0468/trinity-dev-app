@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Customer
+from .models import Customer, Notification
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -127,3 +127,11 @@ class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
             if user:
                 attrs[self.username_field] = user.get_username()
         return super().validate(attrs)
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for Notification model"""
+    class Meta:
+        model = Notification
+        fields = ['id', 'user', 'title', 'message', 'type', 'is_read', 'created_at']
+        read_only_fields = ['id', 'created_at']

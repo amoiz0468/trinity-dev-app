@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Customer
+from .models import Customer, Notification
 
 
 @admin.register(Customer)
@@ -19,3 +19,11 @@ class CustomerAdmin(admin.ModelAdmin):
             'fields': ['is_active', 'created_at', 'updated_at']
         }),
     ]
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['title', 'user', 'type', 'is_read', 'created_at']
+    list_filter = ['type', 'is_read', 'created_at']
+    search_fields = ['title', 'message', 'user__email', 'user__username']
+    readonly_fields = ['created_at']

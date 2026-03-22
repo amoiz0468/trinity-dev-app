@@ -39,3 +39,28 @@ class Customer(models.Model):
     @property
     def full_address(self):
         return f"{self.address}, {self.zip_code} {self.city}, {self.country}"
+
+
+class Notification(models.Model):
+    """
+    Model for storing user notifications and global announcements.
+    """
+    NOTIFICATION_TYPES = [
+        ('info', 'Information'),
+        ('promotion', 'Promotion'),
+        ('alert', 'Alert'),
+        ('system', 'System Message'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.type.upper()}: {self.title}"
