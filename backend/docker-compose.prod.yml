@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER_LOWERCASE}/trinity-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+    restart: always
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER_LOWERCASE}/trinity-frontend:latest
+    ports:
+      - "80:80"
+    restart: always
