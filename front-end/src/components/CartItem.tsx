@@ -24,9 +24,10 @@ const CartItem: React.FC<CartItemProps> = ({
   onDecrease,
   onRemove,
 }) => {
-  const { product, quantity, unit_price, total_price } = item;
-  const subtotal = total_price || (unit_price || product.price) * quantity;
-  const unitPrice = unit_price || product.price;
+  const { product, quantity } = item;
+  const unitPrice = item.unitPrice ?? product.currentPrice ?? product.price;
+  const subtotal = unitPrice * quantity;
+
   const { theme, isDark } = useTheme();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
@@ -46,13 +47,12 @@ const CartItem: React.FC<CartItemProps> = ({
             <Text style={styles.removeText}>✕</Text>
           </TouchableOpacity>
         </View>
+
         <Text style={styles.brand}>{product.brand}</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.price}>{formatCurrency(unitPrice)}</Text>
-          {unitPrice < product.price && (
-            <Text style={styles.originalPrice}>{formatCurrency(product.price)}</Text>
-          )}
-        </View>
+
+        <Text style={styles.price}>
+          {formatCurrency(unitPrice)}
+        </Text>
 
         <View style={styles.footer}>
           <View style={styles.quantityContainer}>
@@ -62,7 +62,9 @@ const CartItem: React.FC<CartItemProps> = ({
             >
               <Text style={styles.quantityButtonText}>−</Text>
             </TouchableOpacity>
+
             <Text style={styles.quantity}>{quantity}</Text>
+
             <TouchableOpacity
               style={[
                 styles.quantityButton,
@@ -74,7 +76,10 @@ const CartItem: React.FC<CartItemProps> = ({
               <Text style={styles.quantityButtonText}>+</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.subtotal}>{formatCurrency(subtotal)}</Text>
+
+          <Text style={styles.subtotal}>
+            {formatCurrency(subtotal)}
+          </Text>
         </View>
       </View>
     </View>
@@ -128,18 +133,6 @@ const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     marginTop: 4,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  originalPrice: {
-    fontSize: 12,
-    color: theme.textSecondary,
-    textDecorationLine: 'line-through',
-    marginLeft: 8,
     fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   removeButton: {

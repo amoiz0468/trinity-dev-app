@@ -52,7 +52,7 @@ class OrderService {
         items: items.map(item => ({
           product: item.product.id,
           quantity: item.quantity,
-          unit_price: item.product.price,
+          unit_price: item.unitPrice ?? item.product.currentPrice ?? item.product.price,
         })),
         payment_method: paymentMethod,
         tax_rate: 20.0,
