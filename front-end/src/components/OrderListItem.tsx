@@ -81,7 +81,7 @@ const OrderListItem: React.FC<OrderListItemProps> = ({
                 </Text>
             </View>
 
-            {showActions && onStatusChange && order.status !== OrderStatus.COMPLETED && (
+            {showActions && onStatusChange && order.status !== OrderStatus.COMPLETED && order.status !== OrderStatus.CANCELLED && (
                 <View style={styles.actions}>
                     {order.status === OrderStatus.PENDING && (
                         <TouchableOpacity
