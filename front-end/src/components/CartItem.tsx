@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Image,
@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { CartItem as CartItemType } from '../types';
-import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { formatCurrency } from '../utils/format';
 
 interface CartItemProps {
@@ -25,6 +26,8 @@ const CartItem: React.FC<CartItemProps> = ({
 }) => {
   const { product, quantity } = item;
   const subtotal = product.price * quantity;
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   return (
     <View style={styles.container}>
@@ -72,25 +75,30 @@ const CartItem: React.FC<CartItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: theme.surface,
     borderRadius: 24,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 5,
+    elevation: isDark ? 0 : 2,
   },
   image: {
     width: 90,
     height: 90,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 20,
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
-    marginLeft: SPACING.lg,
+    marginLeft: SPACING.md,
   },
   header: {
     flexDirection: 'row',
@@ -100,49 +108,49 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: theme.text,
     marginRight: SPACING.sm,
   },
   brand: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   price: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: theme.textSecondary,
     marginTop: 4,
-    fontWeight: '600',
+    fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   removeButton: {
     padding: 4,
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeText: {
-    fontSize: 14,
-    color: COLORS.error,
+    fontSize: 12,
+    color: theme.error,
     fontWeight: 'bold',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: theme.background,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.border,
   },
   quantityButton: {
     width: 32,
@@ -155,21 +163,21 @@ const styles = StyleSheet.create({
   },
   quantityButtonText: {
     fontSize: 18,
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: theme.primary,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   quantity: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    minWidth: 35,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    color: theme.text,
+    minWidth: 30,
     textAlign: 'center',
   },
   subtotal: {
     fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontFamily: TYPOGRAPHY.fontFamily.black,
+    color: theme.primary,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { COLORS, SPACING, TYPOGRAPHY, ERROR_MESSAGES } from '../constants';
+import { SPACING, TYPOGRAPHY, ERROR_MESSAGES } from '../constants';
 import { validateEmail } from '../utils/validation';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -24,12 +25,15 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { login } = useAuth();
+  const { theme, isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const validate = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
@@ -59,7 +63,6 @@ const LoginScreen: React.FC = () => {
         ? identifier.toLowerCase()
         : identifier;
       await login({ email: normalizedIdentifier, password });
-      // Navigation will happen automatically via AuthContext
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
     } finally {
@@ -149,10 +152,10 @@ const LoginScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -166,29 +169,34 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 100,
     height: 100,
-    borderRadius: 30,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderRadius: 32,
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
+    borderColor: isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.2)',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: isDark ? 0.3 : 0.15,
+    shadowRadius: 15,
+    elevation: 8,
   },
   logo: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
+    width: 65,
+    height: 65,
+    borderRadius: 14,
   },
   title: {
-    fontSize: 32,
+    fontSize: 34,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.text,
+    color: theme.text,
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     fontFamily: TYPOGRAPHY.fontFamily.medium,
@@ -198,20 +206,18 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     fontSize: 18,
-    color: COLORS.textSecondary,
   },
   eyeIcon: {
     fontSize: 20,
-    color: COLORS.textSecondary,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
     marginBottom: SPACING.lg,
   },
   forgotPasswordText: {
-    color: COLORS.primary,
+    color: theme.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   loginButton: {
     marginTop: SPACING.md,
@@ -223,12 +229,13 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 15,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   signupLink: {
     fontSize: 15,
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: theme.primary,
+    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -14,21 +14,19 @@ import {
 } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Product } from '../types';
-import OpenFoodService from '../services/openFoodService';
+import { Product } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 import AdminService from '../services/adminService';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import {
-    COLORS,
     SPACING,
     TYPOGRAPHY,
-    ERROR_MESSAGES,
 } from '../constants';
 
 const AdminScannerScreen: React.FC = () => {
     const navigation = useNavigation<any>();
+    const { theme, isDark } = useTheme();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -38,6 +36,8 @@ const AdminScannerScreen: React.FC = () => {
     const [productData, setProductData] = useState<Partial<Product> | null>(null);
     const [price, setPrice] = useState('');
     const [stock, setStock] = useState('');
+
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
     useEffect(() => {
         (async () => {
@@ -109,12 +109,12 @@ const AdminScannerScreen: React.FC = () => {
     };
 
     if (hasPermission === null) return <Loading message="Requesting camera permission..." />;
-    if (hasPermission === false) return <View style={styles.container}><Text>No camera access</Text></View>;
+    if (hasPermission === false) return <View style={styles.container}><Text style={styles.permissionText}>No camera access</Text></View>;
 
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
+            style={[styles.container, { backgroundColor: productData ? theme.background : '#000' }]}
         >
             {!productData ? (
                 <CameraView
@@ -153,6 +153,7 @@ const AdminScannerScreen: React.FC = () => {
                             style={styles.input}
                             value={productData.name}
                             onChangeText={(text) => setProductData({ ...productData, name: text })}
+                            placeholderTextColor={theme.textSecondary}
                         />
                     </View>
 
@@ -162,6 +163,7 @@ const AdminScannerScreen: React.FC = () => {
                             style={styles.input}
                             value={productData.brand}
                             onChangeText={(text) => setProductData({ ...productData, brand: text })}
+                            placeholderTextColor={theme.textSecondary}
                         />
                     </View>
 
@@ -174,7 +176,7 @@ const AdminScannerScreen: React.FC = () => {
                                 onChangeText={setPrice}
                                 keyboardType="numeric"
                                 placeholder="0.00"
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                             />
                         </View>
                         <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -185,7 +187,7 @@ const AdminScannerScreen: React.FC = () => {
                                 onChangeText={setStock}
                                 keyboardType="numeric"
                                 placeholder="0"
-                                placeholderTextColor={COLORS.textSecondary}
+                                placeholderTextColor={theme.textSecondary}
                             />
                         </View>
                     </View>
@@ -208,10 +210,10 @@ const AdminScannerScreen: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: theme.background,
     },
     camera: {
         flex: 1,
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
         width: 250,
         height: 250,
         borderWidth: 2,
-        borderColor: COLORS.secondary,
+        borderColor: theme.secondary,
         borderRadius: 20,
         borderStyle: 'dashed',
     },
@@ -265,13 +267,13 @@ const styles = StyleSheet.create({
     },
     formContent: {
         padding: SPACING.xl,
-        paddingTop: 60,
+        paddingTop: Platform.OS === 'ios' ? 60 : SPACING.xl,
         paddingBottom: 60,
     },
     formTitle: {
         fontSize: 28,
         fontWeight: '800',
-        color: '#FFF',
+        color: theme.text,
         marginBottom: SPACING.xl,
     },
     productImage: {
@@ -279,25 +281,25 @@ const styles = StyleSheet.create({
         height: 200,
         borderRadius: 16,
         marginBottom: SPACING.xl,
-        backgroundColor: COLORS.glass,
+        backgroundColor: theme.surface,
     },
     inputGroup: {
         marginBottom: SPACING.lg,
     },
     label: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 14,
         marginBottom: 8,
         fontWeight: '600',
     },
     input: {
-        backgroundColor: COLORS.surface,
-        color: '#FFF',
+        backgroundColor: theme.surface,
+        color: theme.text,
         borderRadius: 12,
         padding: SPACING.md,
         fontSize: 16,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: theme.border,
     },
     row: {
         flexDirection: 'row',
@@ -310,8 +312,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelText: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontWeight: '600',
+    },
+    permissionText: {
+        fontSize: 16,
+        color: theme.text,
+        textAlign: 'center',
+        marginTop: 100,
     }
 });
 

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
-import { COLORS, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 
 interface LoadingProps {
   message?: string;
@@ -8,6 +9,9 @@ interface LoadingProps {
 }
 
 const Loading: React.FC<LoadingProps> = ({ message, size = 'large' }) => {
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <View 
       style={styles.container}
@@ -15,23 +19,24 @@ const Loading: React.FC<LoadingProps> = ({ message, size = 'large' }) => {
       accessibilityRole="progressbar"
       accessibilityState={{ busy: true }}
     >
-      <ActivityIndicator size={size} color={COLORS.primary} />
+      <ActivityIndicator size={size} color={theme.primary} />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   message: {
-    marginTop: 16,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+    fontSize: 16,
+    color: theme.textSecondary,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
 });
 

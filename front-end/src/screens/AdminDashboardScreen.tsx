@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Svg, { Path, Rect, Circle, G, Line, LinearGradient, Stop, Defs, Text as SvgText } from 'react-native-svg';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { AdminStats, Customer, ReportData, Order, OrderStatus, Product as ProductType, RootStackParamList, MainTabParamList } from '../types';
 import AdminService from '../services/adminService';
 import StatCard from '../components/StatCard';
@@ -27,6 +27,7 @@ import OrderListItem from '../components/OrderListItem';
 import CustomerListItem from '../components/CustomerListItem';
 import EmptyState from '../components/EmptyState';
 import { formatCurrency } from '../utils/format';
+import { useTheme } from '../contexts/ThemeContext';
 import AdminProductListItem from '../components/AdminProductListItem';
 import ProductModal from '../components/ProductModal';
 
@@ -34,22 +35,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type TabType = 'orders' | 'reports' | 'customers' | 'products';
 
-const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; order: number }> = {
-    pending: { label: 'Pending', color: '#F59E0B', order: 0 },
-    processing: { label: 'Processing', color: '#8B5CF6', order: 1 },
-    paid: { label: 'Paid', color: '#10B981', order: 2 },
-    cancelled: { label: 'Cancelled', color: '#EF4444', order: 3 },
-    refunded: { label: 'Refunded', color: '#6B7280', order: 4 },
-};
-
-const formatOrderStatusLabel = (status: string): string => {
-    const key = status?.toLowerCase?.() || '';
-    return ORDER_STATUS_CONFIG[key]?.label || status || 'Unknown';
-};
-
-const getOrderStatusColor = (status: string): string => {
-    const key = status?.toLowerCase?.() || '';
-    return ORDER_STATUS_CONFIG[key]?.color || COLORS.primary;
+const ORDER_STATUS_CONFIG: Record<string, { label: string; order: number }> = {
+    pending: { label: 'Pending', order: 0 },
+    processing: { label: 'Processing', order: 1 },
+    paid: { label: 'Paid', order: 2 },
+    cancelled: { label: 'Cancelled', order: 3 },
+    refunded: { label: 'Refunded', order: 4 },
 };
 
 const getOrderStatusOrder = (status: string): number => {
@@ -66,6 +57,8 @@ const formatShortDate = (value: string): string => {
 // --- Custom SVG Chart Components ---
 
 const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
     const chartHeight = 150;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4); // Adjusted for margin + padding
     const safeData = data.filter((d) => Number.isFinite(d.amount));
@@ -106,14 +99,14 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
             <Svg height={chartHeight} width={chartWidth}>
                 <Defs>
                     <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor={COLORS.primary} stopOpacity="0.4" />
-                        <Stop offset="1" stopColor={COLORS.primary} stopOpacity="0" />
+                        <Stop offset="0" stopColor={theme.primary} stopOpacity="0.4" />
+                        <Stop offset="1" stopColor={theme.primary} stopOpacity="0" />
                     </LinearGradient>
                 </Defs>
                 <Path d={pathData} fill="url(#grad)" />
-                <Path d={lineData} fill="none" stroke={COLORS.primary} strokeWidth="3" />
+                <Path d={lineData} fill="none" stroke={theme.primary} strokeWidth="3" />
                 {validPoints.map((p, i) => (
-                    <Circle key={i} cx={p.x} cy={p.y} r="4" fill={COLORS.primary} />
+                    <Circle key={i} cx={p.x} cy={p.y} r="4" fill={theme.primary} />
                 ))}
             </Svg>
         </View>
@@ -121,6 +114,8 @@ const RevenueAreaChart: React.FC<{ data: { amount: number }[] }> = ({ data }) =>
 };
 
 const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = ({ data }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
     const chartHeight = 120;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
     const safeData = data
@@ -135,6 +130,17 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
             </View>
         );
     }
+
+    const getOrderStatusColor = (status: string): string => {
+        const colors: Record<string, string> = {
+            pending: theme.warning,
+            processing: theme.secondary,
+            paid: theme.success,
+            cancelled: theme.error,
+            refunded: theme.textSecondary,
+        };
+        return colors[status.toLowerCase()] || theme.primary;
+    };
 
     const maxVal = Math.max(...safeData.map(d => d.count), 1) * 1.2;
     const barWidth = Math.min(52, Math.max(28, chartWidth / Math.max(safeData.length * 1.8, 1)));
@@ -165,7 +171,7 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
                             <SvgText
                                 x={x + barWidth / 2}
                                 y={Math.max(12, chartHeight - h - 6)}
-                                fill="#FFFFFF"
+                                fill={theme.text}
                                 fontSize="11"
                                 fontWeight="700"
                                 textAnchor="middle"
@@ -181,7 +187,7 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
                     <View key={`${d.status}-${i}`} style={styles.chartLegendItem}>
                         <View style={[styles.chartLegendDot, { backgroundColor: getOrderStatusColor(d.status) }]} />
                         <Text style={styles.chartLegendText}>
-                            {formatOrderStatusLabel(d.status)}: {d.count}
+                            {d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase()}: {d.count}
                         </Text>
                     </View>
                 ))}
@@ -191,6 +197,8 @@ const OrderBarChart: React.FC<{ data: { count: number; status: string }[] }> = (
 };
 
 const CustomerLineChart: React.FC<{ data: { date: string; count: number }[] }> = ({ data }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
     const chartHeight = 100;
     const chartWidth = SCREEN_WIDTH - (SPACING.xl * 4);
     const safeData = data
@@ -243,12 +251,12 @@ const CustomerLineChart: React.FC<{ data: { date: string; count: number }[] }> =
                 </Text>
             </View>
             <Svg height={chartHeight} width={chartWidth}>
-                <Line x1="0" y1={chartHeight * 0.25} x2={chartWidth} y2={chartHeight * 0.25} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-                <Line x1="0" y1={chartHeight * 0.5} x2={chartWidth} y2={chartHeight * 0.5} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-                <Line x1="0" y1={chartHeight * 0.75} x2={chartWidth} y2={chartHeight * 0.75} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-                <Path d={lineData} fill="none" stroke={COLORS.secondary} strokeWidth="3" />
+                <Line x1="0" y1={chartHeight * 0.25} x2={chartWidth} y2={chartHeight * 0.25} stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"} strokeWidth="1" />
+                <Line x1="0" y1={chartHeight * 0.5} x2={chartWidth} y2={chartHeight * 0.5} stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"} strokeWidth="1" />
+                <Line x1="0" y1={chartHeight * 0.75} x2={chartWidth} y2={chartHeight * 0.75} stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"} strokeWidth="1" />
+                <Path d={lineData} fill="none" stroke={theme.secondary} strokeWidth="3" />
                 {validPoints.map((p, i) => (
-                    <Circle key={i} cx={p.x} cy={p.y} r="3" fill={COLORS.secondary} />
+                    <Circle key={i} cx={p.x} cy={p.y} r="3" fill={theme.secondary} />
                 ))}
             </Svg>
             <View style={styles.chartAxisLabels}>
@@ -261,6 +269,8 @@ const CustomerLineChart: React.FC<{ data: { date: string; count: number }[] }> =
 };
 
 const CategoryDistributionChart: React.FC<{ data: { categoryName: string; revenue: number; quantity: number }[] }> = ({ data }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
     const safeData = data
         .filter((item) => Number.isFinite(item.revenue) && item.revenue > 0)
         .sort((a, b) => b.revenue - a.revenue)
@@ -282,7 +292,7 @@ const CategoryDistributionChart: React.FC<{ data: { categoryName: string; revenu
             <Text style={styles.chartTitle}>Category Performance</Text>
             {safeData.map((item, i) => {
                 const percent = Math.round((item.revenue / totalRevenue) * 100);
-                const barColor = i % 2 === 0 ? COLORS.accent : COLORS.primary;
+                const barColor = i % 2 === 0 ? theme.accent : theme.primary;
                 return (
                 <View key={i} style={styles.categoryItem}>
                     <View style={styles.categoryHeaderRow}>
@@ -306,19 +316,23 @@ const AdminDashboardScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { user, logout } = useAuth();
     const { clearCart } = useCart();
+    const { theme, isDark, toggleTheme } = useTheme();
+
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
     useLayoutEffect(() => {
         navigation.setOptions({
             headerRight: () => (
                 <TouchableOpacity
-                    style={styles.navLogoutButton}
-                    onPress={handleLogout}
+                    onPress={toggleTheme}
+                    style={{ marginRight: SPACING.md, padding: 8 }}
+                    accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
                 >
-                    <Text style={styles.navLogoutButtonText}>Logout</Text>
+                    <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
                 </TouchableOpacity>
             ),
         });
-    }, [navigation]);
+    }, [navigation, isDark, toggleTheme]);
     const [activeTab, setActiveTab] = useState<TabType>('reports');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -530,7 +544,7 @@ const AdminDashboardScreen: React.FC = () => {
                     placeholder="Search orders..."
                     value={orderSearch}
                     onChangeText={handleOrderSearch}
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={theme.textSecondary}
                 />
             </View>
 
@@ -560,7 +574,7 @@ const AdminDashboardScreen: React.FC = () => {
 
             <View style={styles.listWrapper}>
                 {loading ? (
-                    <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+                    <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
                 ) : orders.length > 0 ? (
                     <FlatList
                         data={orders}
@@ -580,7 +594,7 @@ const AdminDashboardScreen: React.FC = () => {
     );
 
     const renderReportsTab = () => {
-        if (loading) return <View style={styles.loaderContainer}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+        if (loading) return <View style={styles.loaderContainer}><ActivityIndicator size="large" color={theme.primary} /></View>;
         if (!stats || !reportData) return <EmptyState icon="📊" title="No Data" message="Unable to load report data" />;
 
         return (
@@ -632,12 +646,12 @@ const AdminDashboardScreen: React.FC = () => {
                     placeholder="Search customers..."
                     value={customerSearch}
                     onChangeText={handleCustomerSearch}
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={theme.textSecondary}
                 />
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+                <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
             ) : customers.length > 0 ? (
                 <FlatList
                     data={customers}
@@ -666,7 +680,7 @@ const AdminDashboardScreen: React.FC = () => {
                     placeholder="Search products..."
                     value={productSearch}
                     onChangeText={handleProductSearch}
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={theme.textSecondary}
                 />
                 <TouchableOpacity
                     style={styles.addButton}
@@ -702,7 +716,7 @@ const AdminDashboardScreen: React.FC = () => {
             )}
 
             {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+                <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
             ) : products.length > 0 ? (
                 <FlatList
                     data={products}
@@ -764,17 +778,17 @@ const AdminDashboardScreen: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: theme.background,
     },
     header: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: theme.surface,
         padding: SPACING.xl,
         paddingTop: Platform.OS === 'ios' ? SPACING.md : SPACING.xl,
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        borderBottomColor: theme.border,
     },
     headerRow: {
         flexDirection: 'row',
@@ -791,37 +805,25 @@ const styles = StyleSheet.create({
         marginRight: SPACING.md,
         borderRadius: 8,
     },
-    navLogoutButton: {
-        marginRight: SPACING.md,
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.2)',
-    },
-    navLogoutButtonText: {
-        color: '#F87171',
-        fontSize: 13,
-        fontWeight: '700',
-    },
     headerTitle: {
         fontSize: 32,
         fontWeight: '800',
-        color: '#FFFFFF',
+        color: theme.text,
         letterSpacing: -0.5,
     },
     headerSubtitle: {
         fontSize: 14,
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         marginTop: 4,
         fontWeight: '500',
     },
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: COLORS.surface,
+        backgroundColor: theme.surface,
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
     },
     tabButton: {
         flex: 1,
@@ -831,7 +833,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
     },
     tabButtonActive: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
     },
     tabIcon: {
         fontSize: 20,
@@ -839,11 +841,11 @@ const styles = StyleSheet.create({
     },
     tabLabel: {
         fontSize: 12,
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontWeight: '600',
     },
     tabLabelActive: {
-        color: COLORS.primary,
+        color: theme.primary,
         fontWeight: '800',
     },
     contentWrapper: {
@@ -865,20 +867,20 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
         marginHorizontal: SPACING.xl,
         marginTop: SPACING.xl,
         marginBottom: SPACING.md,
         paddingHorizontal: SPACING.md,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     },
     searchInput: {
         flex: 1,
         paddingVertical: SPACING.md,
         fontSize: 16,
-        color: '#FFFFFF',
+        color: theme.text,
     },
     searchIcon: {
         fontSize: 18,
@@ -888,7 +890,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: COLORS.primary,
+        backgroundColor: theme.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: SPACING.sm,
@@ -900,19 +902,21 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     addOptions: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: theme.surface,
         marginHorizontal: SPACING.xl,
         marginBottom: SPACING.md,
         borderRadius: 16,
         padding: SPACING.sm,
         flexDirection: 'row',
         gap: 8,
+        borderWidth: 1,
+        borderColor: theme.border,
     },
     addOptionItem: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
         padding: SPACING.md,
         borderRadius: 12,
         justifyContent: 'center',
@@ -922,7 +926,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     addOptionLabel: {
-        color: '#FFFFFF',
+        color: theme.text,
         fontSize: 13,
         fontWeight: '700',
     },
@@ -933,20 +937,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         height: 38,
         borderRadius: 19,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
         marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     },
     filterChipActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
+        backgroundColor: theme.primary,
+        borderColor: theme.primary,
     },
     filterChipText: {
         fontSize: 13,
-        color: '#FFFFFF',
+        color: theme.textSecondary,
         fontWeight: '700',
         letterSpacing: 0.2,
     },
@@ -968,11 +972,12 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: theme.background,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: '800',
-        color: '#FFFFFF',
+        color: theme.text,
         marginHorizontal: SPACING.xl,
         marginTop: SPACING.xl,
         marginBottom: SPACING.lg,
@@ -986,16 +991,21 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     chartWrapper: {
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 1)',
         marginHorizontal: SPACING.xl,
         marginBottom: SPACING.lg,
         padding: SPACING.xl,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 10,
+        elevation: isDark ? 0 : 2,
     },
     chartTitle: {
-        color: '#FFFFFF',
+        color: theme.text,
         fontSize: 16,
         fontWeight: '700',
         marginBottom: SPACING.lg,
@@ -1021,7 +1031,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     chartLegendText: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 12,
         fontWeight: '600',
     },
@@ -1031,16 +1041,16 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.sm,
     },
     customerSummaryText: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 12,
         fontWeight: '600',
     },
     growthPositive: {
-        color: '#10B981',
+        color: theme.success,
         fontWeight: '700',
     },
     growthNegative: {
-        color: '#EF4444',
+        color: theme.error,
         fontWeight: '700',
     },
     chartAxisLabels: {
@@ -1049,7 +1059,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     axisLabel: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 11,
         fontWeight: '500',
     },
@@ -1060,14 +1070,14 @@ const styles = StyleSheet.create({
     },
     barRowLabel: {
         width: 70,
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 12,
         fontWeight: '600',
     },
     barBg: {
         flex: 1,
         height: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
         borderRadius: 5,
         marginHorizontal: SPACING.md,
         overflow: 'hidden',
@@ -1078,7 +1088,7 @@ const styles = StyleSheet.create({
     },
     barVal: {
         width: 35,
-        color: '#FFFFFF',
+        color: theme.text,
         fontSize: 12,
         fontWeight: '700',
         textAlign: 'right',
@@ -1095,44 +1105,49 @@ const styles = StyleSheet.create({
     },
     categoryName: {
         flex: 1,
-        color: '#FFFFFF',
+        color: theme.text,
         fontSize: 13,
         fontWeight: '700',
     },
     categoryMeta: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 11,
         fontWeight: '600',
         flexShrink: 1,
         textAlign: 'right',
     },
     categoryPercent: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 11,
         marginTop: 4,
         textAlign: 'right',
     },
     emptyChartText: {
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         fontSize: 13,
         fontWeight: '500',
     },
     productItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 1)',
         marginHorizontal: SPACING.xl,
         marginBottom: 10,
         padding: SPACING.lg,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0 : 0.03,
+        shadowRadius: 5,
+        elevation: isDark ? 0 : 1,
     },
     productRank: {
         width: 36,
         height: 36,
         borderRadius: 12,
-        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(79, 70, 229, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: SPACING.md,
@@ -1140,7 +1155,7 @@ const styles = StyleSheet.create({
     productRankText: {
         fontSize: 14,
         fontWeight: '800',
-        color: COLORS.primary,
+        color: theme.primary,
     },
     productInfo: {
         flex: 1,
@@ -1148,17 +1163,17 @@ const styles = StyleSheet.create({
     productName: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.text,
     },
     productSales: {
         fontSize: 12,
-        color: COLORS.textSecondary,
+        color: theme.textSecondary,
         marginTop: 2,
     },
     productRevenue: {
         fontSize: 16,
         fontWeight: '800',
-        color: COLORS.primary,
+        color: theme.primary,
     },
 });
 

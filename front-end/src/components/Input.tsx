@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   TextInput,
@@ -7,7 +7,8 @@ import {
   TextInputProps,
   TouchableOpacity,
 } from 'react-native';
-import { COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { SPACING, LAYOUT, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -30,7 +31,10 @@ const Input: React.FC<InputProps> = ({
   accessibilityHint,
   ...props
 }) => {
+  const { theme, isDark } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -45,8 +49,8 @@ const Input: React.FC<InputProps> = ({
         {icon && <View style={styles.iconContainer}>{icon}</View>}
         <TextInput
           style={[styles.input, icon ? styles.inputWithIcon : undefined, style]}
-          placeholderTextColor={COLORS.textMuted}
-          selectionColor={COLORS.primary}
+          placeholderTextColor={theme.textMuted}
+          selectionColor={theme.primary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           accessibilityLabel={accessibilityLabel || label}
@@ -67,40 +71,40 @@ const Input: React.FC<InputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     marginBottom: SPACING.lg,
   },
   label: {
     fontSize: TYPOGRAPHY.fontSize.sm,
     fontWeight: '700',
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.sm,
     marginLeft: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', // Glassy effect
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', // Glassy effect
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: theme.border,
     borderRadius: 16,
     paddingHorizontal: SPACING.md,
     height: 56,
   },
   inputContainerFocused: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Subtle primary glow
+    borderColor: theme.primary,
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(79, 70, 229, 0.05)', // Subtle primary glow
   },
   inputContainerError: {
-    borderColor: COLORS.error,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    borderColor: theme.error,
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.05)' : 'rgba(220, 38, 38, 0.05)',
   },
   input: {
     flex: 1,
     height: '100%',
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text,
+    color: theme.text,
     fontFamily: TYPOGRAPHY.fontFamily.regular,
   },
   inputWithIcon: {
@@ -114,7 +118,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: TYPOGRAPHY.fontSize.xs,
-    color: COLORS.error,
+    color: theme.error,
     marginTop: SPACING.xs,
     marginLeft: 8,
     fontWeight: '600',

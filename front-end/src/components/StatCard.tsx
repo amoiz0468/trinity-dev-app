@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
+import { SPACING, TYPOGRAPHY } from '../constants';
 
 interface StatCardProps {
     icon: string;
@@ -17,11 +18,14 @@ const StatCard: React.FC<StatCardProps> = ({
     value,
     trend,
     trendLabel,
-    color = COLORS.primary,
+    color,
 }) => {
+    const { theme, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
     const getTrendColor = () => {
-        if (!trend) return COLORS.textSecondary;
-        return trend >= 0 ? COLORS.success : COLORS.error;
+        if (!trend) return theme.textSecondary;
+        return trend >= 0 ? theme.success : theme.error;
     };
 
     const getTrendIcon = () => {
@@ -29,12 +33,14 @@ const StatCard: React.FC<StatCardProps> = ({
         return trend >= 0 ? '📈' : '📉';
     };
 
+    const displayColor = color || theme.primary;
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.icon}>{icon}</Text>
                 {trend !== undefined && (
-                    <View style={[styles.trendBadge, { backgroundColor: getTrendColor() + '20' }]}>
+                    <View style={[styles.trendBadge, { backgroundColor: getTrendColor() + (isDark ? '30' : '15') }]}>
                         <Text style={[styles.trendText, { color: getTrendColor() }]}>
                             {getTrendIcon()} {Math.abs(trend)}%
                         </Text>
@@ -43,7 +49,7 @@ const StatCard: React.FC<StatCardProps> = ({
             </View>
 
             <Text style={styles.title}>{title}</Text>
-            <Text style={[styles.value, { color }]}>{value}</Text>
+            <Text style={[styles.value, { color: displayColor }]}>{value}</Text>
 
             {trendLabel && (
                 <Text style={styles.trendLabel}>{trendLabel}</Text>
@@ -52,49 +58,53 @@ const StatCard: React.FC<StatCardProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
     container: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 12,
-        padding: SPACING.md,
+        backgroundColor: theme.surface,
+        borderRadius: 16,
+        padding: SPACING.lg,
         marginBottom: SPACING.md,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: theme.border,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 5,
+        elevation: isDark ? 0 : 2,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: SPACING.sm,
+        marginBottom: SPACING.md,
     },
     icon: {
         fontSize: 32,
     },
     trendBadge: {
         paddingHorizontal: SPACING.sm,
-        paddingVertical: SPACING.xs,
-        borderRadius: 6,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     trendText: {
-        fontSize: TYPOGRAPHY.fontSize.xs,
-        fontWeight: '600',
+        fontSize: 12,
+        fontFamily: TYPOGRAPHY.fontFamily.bold,
     },
     title: {
-        fontSize: TYPOGRAPHY.fontSize.sm,
-        color: COLORS.textSecondary,
-        marginBottom: SPACING.xs,
+        fontSize: 14,
+        color: theme.textSecondary,
+        marginBottom: 4,
+        fontFamily: TYPOGRAPHY.fontFamily.medium,
     },
     value: {
-        fontSize: TYPOGRAPHY.fontSize.xxl,
-        fontWeight: '700',
-        marginBottom: SPACING.xs,
+        fontSize: 28,
+        fontFamily: TYPOGRAPHY.fontFamily.black,
+        marginBottom: 4,
     },
     trendLabel: {
-        fontSize: TYPOGRAPHY.fontSize.xs,
-        color: COLORS.textSecondary,
+        fontSize: 12,
+        color: theme.textSecondary,
+        fontFamily: TYPOGRAPHY.fontFamily.regular,
     },
 });
 

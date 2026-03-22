@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,9 +17,10 @@ import { Image } from 'react-native';
 import { MainTabParamList, Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import ProductCard from '../components/ProductCard';
 import Loading from '../components/Loading';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import ProductService from '../services/productService';
 
 type HomeScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Home'>;
@@ -28,6 +29,8 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, logout } = useAuth();
   const { cart, clearCart } = useCart();
+  const { theme, isDark, toggleTheme } = useTheme();
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,6 +38,22 @@ const HomeScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortByPrice, setSortByPrice] = useState<'none' | 'asc' | 'desc'>('none');
   const [categories, setCategories] = useState<string[]>(['All']);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity 
+          onPress={toggleTheme} 
+          style={{ marginRight: SPACING.md, padding: 8 }}
+          accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        >
+          <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, isDark, toggleTheme]);
 
   useEffect(() => {
     loadProducts();
@@ -164,7 +183,12 @@ const HomeScreen: React.FC = () => {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
         }
       >
         {/* Quick Actions */}
@@ -209,7 +233,7 @@ const HomeScreen: React.FC = () => {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={theme.textSecondary}
               />
             </View>
 
@@ -252,10 +276,10 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   header: {
     padding: SPACING.xl,
@@ -263,6 +287,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: theme.background,
   },
   logo: {
     width: 45,
@@ -285,33 +310,33 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginTop: 2,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   logoutButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
     marginLeft: 12,
   },
   logoutButtonText: {
-    color: '#F87171',
+    color: theme.error,
     fontSize: 13,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   headerIconButton: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
   },
   headerIconText: {
     fontSize: 22,
@@ -320,14 +345,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.background,
+    borderColor: theme.background,
   },
   cartBadgeText: {
     color: '#FFFFFF',
@@ -350,13 +375,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     letterSpacing: -0.2,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -367,14 +387,19 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '45%',
     aspectRatio: 1.1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 1)',
     borderRadius: 24,
     padding: SPACING.lg,
     margin: SPACING.xs,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: isDark ? 0 : 2,
   },
   actionIcon: {
     fontSize: 32,
@@ -383,12 +408,12 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 14,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.text,
+    color: theme.text,
     textAlign: 'center',
   },
   emptyText: {
     textAlign: 'center',
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontSize: 16,
     marginTop: SPACING.xl,
     fontStyle: 'italic',
@@ -399,12 +424,12 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
     borderRadius: 12,
     paddingHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
   },
   searchIcon: {
     fontSize: 18,
@@ -413,7 +438,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 44,
-    color: COLORS.text,
+    color: theme.text,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   categoriesScroll: {
@@ -423,18 +448,18 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
     borderRadius: 20,
     marginRight: SPACING.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
   },
   categoryChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
   categoryChipText: {
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontSize: 13,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
@@ -449,42 +474,14 @@ const styles = StyleSheet.create({
   sortButton: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
   },
   sortText: {
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
-  },
-  promoBanner: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.secondary,
-    marginHorizontal: SPACING.xl,
-    marginBottom: SPACING.xxl,
-    padding: SPACING.xl,
-    borderRadius: 24,
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  promoIcon: {
-    fontSize: 44,
-    marginRight: SPACING.lg,
-  },
-  promoContent: {
-    flex: 1,
-  },
-  promoTitle: {
-    fontSize: 20,
-    fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  promoText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
 });

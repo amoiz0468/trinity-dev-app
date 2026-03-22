@@ -45,9 +45,9 @@ export const PAYPAL_CONFIG = {
 };
 
 // App Colors (Sapphire Night Theme - Premium & Vibrant)
-export const COLORS = {
-  primary: '#4F46E5',    // Indigo 600
-  secondary: '#7C3AED',  // Violet 600
+export const DARK_COLORS = {
+  primary: '#6366F1',    // Indigo 500 (Vibrant)
+  secondary: '#8B5CF6',  // Violet 500
   accent: '#F43F5E',     // Rose 500
   success: '#10B981',    // Emerald 500
   warning: '#F59E0B',    // Amber 500
@@ -63,6 +63,33 @@ export const COLORS = {
   placeholder: '#64748B',
   glass: 'rgba(255, 255, 255, 0.03)',
   cardGradient: ['#1E293B', '#0F172A'],
+};
+
+export const LIGHT_COLORS = {
+  primary: '#4F46E5',    // Indigo 600
+  secondary: '#7C3AED',  // Violet 600
+  accent: '#E11D48',     // Rose 600
+  success: '#059669',    // Emerald 600
+  warning: '#D97706',    // Amber 600
+  error: '#DC2626',      // Red 600
+  background: '#F8FAFC', // Slate 50
+  surface: '#FFFFFF',    // White
+  surfaceLight: '#F1F5F9', // Slate 100
+  text: '#0F172A',       // Slate 900
+  textSecondary: '#475569', // Slate 600
+  textMuted: '#94A3B8',  // Slate 400
+  border: 'rgba(0, 0, 0, 0.1)',
+  disabled: '#E2E8F0',
+  placeholder: '#94A3B8',
+  glass: 'rgba(0, 0, 0, 0.03)',
+  cardGradient: ['#FFFFFF', '#F8FAFC'],
+};
+
+export const COLORS = DARK_COLORS; // Default for now to avoid breaking existing imports
+
+export const THEMES = {
+  light: LIGHT_COLORS,
+  dark: DARK_COLORS,
 };
 
 // App Typography (Premium Scale)

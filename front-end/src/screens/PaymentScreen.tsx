@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,36 +6,33 @@ import {
   ScrollView,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import PaymentService from '../services/paymentService';
 import OrderService from '../services/orderService';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
-import { COLORS, SPACING, TYPOGRAPHY, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../constants';
+import { SPACING, TYPOGRAPHY, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../constants';
 import { formatCurrency } from '../utils/format';
 
 type PaymentRouteProp = RouteProp<RootStackParamList, 'Payment'>;
 type PaymentNavigationProp = StackNavigationProp<RootStackParamList, 'Payment'>;
 
-/**
- * Payment Screen
- * Handles PayPal payment integration
- * PayPal payment flow:
- * 1) Create order on backend
- * 2) Open PayPal approval URL
- * 3) Capture approved order on backend
- */
 const PaymentScreen: React.FC = () => {
   const route = useRoute<PaymentRouteProp>();
   const navigation = useNavigation<PaymentNavigationProp>();
   const { cart, clearCart } = useCart();
+  const { theme, isDark } = useTheme();
   const [processing, setProcessing] = useState(false);
   const [pendingPayPalOrderId, setPendingPayPalOrderId] = useState<string | null>(null);
   const [pendingApprovalUrl, setPendingApprovalUrl] = useState<string | null>(null);
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const handlePayPalPayment = async () => {
     setProcessing(true);
@@ -43,7 +40,6 @@ const PaymentScreen: React.FC = () => {
     try {
       const order = await OrderService.getOrderById(route.params.orderId);
 
-      // Initialize PayPal payment
       const paymentData = await PaymentService.initiatePayment({
         orderId: order.id,
         amount: cart.totalAmount,
@@ -56,8 +52,8 @@ const PaymentScreen: React.FC = () => {
       );
       const approvalUrl =
         approvalLink?.href ||
-        paymentData.approval_url ||
-        paymentData.approve_url ||
+        (paymentData as any).approval_url ||
+        (paymentData as any).approve_url ||
         (paymentData?.id
           ? `https://www.sandbox.paypal.com/checkoutnow?token=${paymentData.id}`
           : null) ||
@@ -87,20 +83,16 @@ const PaymentScreen: React.FC = () => {
   const executePayment = async (paymentId: string) => {
     setProcessing(true);
     try {
-      // Execute the payment
       const paymentResponse = await PaymentService.executePayment(
         route.params.orderId,
         paymentId
       );
 
       if (paymentResponse.status === 'COMPLETED' || paymentResponse.status === 'APPROVED' || paymentResponse.success) {
-
-        // Clear cart
         clearCart();
         setPendingPayPalOrderId(null);
         setPendingApprovalUrl(null);
 
-        // Show success message
         Alert.alert(
           'Payment Successful!',
           SUCCESS_MESSAGES.PAYMENT_SUCCESS,
@@ -191,17 +183,18 @@ const PaymentScreen: React.FC = () => {
               variant="outline"
               fullWidth
               disabled={processing}
+              style={styles.payButton}
             />
           </>
         ) : (
-        <Button
-          title="Pay with PayPal"
-          onPress={handlePayPalPayment}
-          loading={processing}
-          fullWidth
-          size="large"
-          style={styles.payButton}
-        />
+          <Button
+            title="Pay with PayPal"
+            onPress={handlePayPalPayment}
+            loading={processing}
+            fullWidth
+            size="large"
+            style={styles.payButton}
+          />
         )}
 
         <Button
@@ -216,10 +209,10 @@ const PaymentScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   content: {
     padding: SPACING.xl,
@@ -235,53 +228,65 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   title: {
-    fontSize: TYPOGRAPHY.fontSize.xxxl,
+    fontSize: 32,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.text,
+    color: theme.text,
     marginBottom: SPACING.sm,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: theme.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xxl,
     fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   amountContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: SPACING.xl,
+    backgroundColor: theme.surface,
+    borderRadius: 20,
+    padding: SPACING.xxl,
     alignItems: 'center',
     marginBottom: SPACING.xl,
     width: '100%',
+    borderWidth: 1,
+    borderColor: theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: isDark ? 0 : 4,
   },
   amountLabel: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: theme.textSecondary,
     marginBottom: SPACING.xs,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
   amount: {
-    fontSize: TYPOGRAPHY.fontSize.xxxl,
+    fontSize: 42,
     fontFamily: TYPOGRAPHY.fontFamily.black,
-    color: COLORS.primary,
+    color: theme.primary,
   },
   infoBox: {
-    backgroundColor: COLORS.primary + '10',
-    borderRadius: 8,
-    padding: SPACING.md,
+    backgroundColor: theme.primary + '15',
+    borderRadius: 12,
+    padding: SPACING.lg,
     width: '100%',
   },
   infoText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text,
+    fontSize: 14,
+    color: theme.text,
     marginBottom: SPACING.xs,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    lineHeight: 20,
   },
   footer: {
     padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
+    backgroundColor: theme.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.border,
+    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.lg,
   },
   payButton: {
     marginBottom: SPACING.md,

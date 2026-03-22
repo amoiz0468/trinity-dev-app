@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { COLORS, SPACING, TYPOGRAPHY, SUCCESS_MESSAGES } from '../constants';
+import { SPACING, TYPOGRAPHY } from '../constants';
 import { validateEmail, validateName } from '../utils/validation';
 
 type EditProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
@@ -23,6 +24,7 @@ type EditProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, '
 const EditProfileScreen: React.FC = () => {
   const navigation = useNavigation<EditProfileScreenNavigationProp>();
   const { user, refreshUser } = useAuth();
+  const { theme, isDark } = useTheme();
   const { updateProfile } = require('../services/authService').default;
 
   const [formData, setFormData] = useState({
@@ -38,6 +40,8 @@ const EditProfileScreen: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -105,7 +109,7 @@ const EditProfileScreen: React.FC = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
-      keyboardVerticalOffset={100}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -191,6 +195,7 @@ const EditProfileScreen: React.FC = () => {
             onPress={handleSave}
             loading={loading}
             fullWidth
+            size="large"
             style={styles.saveButton}
           />
 
@@ -209,14 +214,15 @@ const EditProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: theme.background,
   },
   scrollContent: {
     flexGrow: 1,
     padding: SPACING.xl,
+    paddingBottom: 40,
   },
   form: {
     width: '100%',
@@ -224,15 +230,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
-    color: COLORS.textSecondary,
+    color: theme.textSecondary,
     marginBottom: SPACING.lg,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: theme.border,
     marginVertical: SPACING.xl,
+    opacity: isDark ? 0.3 : 0.6,
   },
   row: {
     flexDirection: 'row',
@@ -240,6 +247,11 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: SPACING.xl,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cancelButton: {
     marginTop: SPACING.md,
@@ -247,8 +259,8 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
   cancelText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.textSecondary,
+    fontSize: 15,
+    color: theme.textSecondary,
     fontFamily: TYPOGRAPHY.fontFamily.bold,
   },
 });
