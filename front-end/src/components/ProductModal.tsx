@@ -86,13 +86,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
             return;
         }
 
+        const parsedPrice = parseFloat(price);
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+            Alert.alert('Error', 'Price should be above 0');
+            return;
+        }
+
         try {
             setLoading(true);
             await onSave({
                 name,
                 brand,
                 category,
-                price: parseFloat(price),
+                price: parsedPrice,
                 stock: parseInt(stock, 10),
                 imageUrl,
                 description,

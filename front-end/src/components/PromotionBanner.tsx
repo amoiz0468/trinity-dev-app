@@ -10,6 +10,7 @@ import {
 import { Promotion } from '../types';
 import { SPACING, TYPOGRAPHY } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
+import { formatDate } from '../utils/format';
 
 const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width - SPACING.lg * 2;
@@ -46,6 +47,9 @@ const PromotionBanner: React.FC<PromotionBannerProps> = ({ promotion, onPress })
             <Text style={styles.description} numberOfLines={2}>
               {promotion.description}
             </Text>
+            {promotion.endDate && (
+              <Text style={styles.validUntil}>Valid until {formatDate(promotion.endDate)}</Text>
+            )}
             {promotion.productName && (
               <Text style={styles.productLink}>
                 On {promotion.productName}
@@ -117,6 +121,12 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fontFamily.bold,
     marginTop: 8,
     textDecorationLine: 'underline',
+  },
+  validUntil: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    marginTop: 6,
   },
 });
 

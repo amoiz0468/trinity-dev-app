@@ -57,6 +57,7 @@ class Notification(models.Model):
     message = models.TextField()
     type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info')
     is_read = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

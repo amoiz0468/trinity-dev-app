@@ -313,4 +313,5 @@ class PromotionViewSet(viewsets.ModelViewSet):
             title=title,
             message=message,
             type='promotion',
+            expires_at=promotion.end_date,
         )
