@@ -452,8 +452,8 @@ class AdminService {
       const response = await apiClient.post<any>('/products/sync_openfoodfacts/', { barcode });
       return this.mapProduct(response.product || response);
     } catch (error: any) {
-      console.error('Error syncing with OpenFoodFacts:', error);
-      throw new Error(error.message || 'Failed to sync with OpenFoodFacts');
+      // Avoid noisy runtime error overlays in admin scan flow; return a clean UI message instead.
+      throw new Error(error.message || 'Could not fetch product details from barcode');
     }
   }
 }
