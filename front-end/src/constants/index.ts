@@ -7,24 +7,8 @@ const resolveApiBaseUrl = (): string => {
     return envUrl.replace(/\/+$/, '');
   }
 
-  const hostUri =
-    (Constants as any)?.expoConfig?.hostUri ||
-    (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost ||
-    '';
-  const host = typeof hostUri === 'string' ? hostUri.split(':')[0] : '';
-
-  // Prefer Expo host IP for both physical devices and emulators.
-  if (host && host !== 'localhost' && host !== '127.0.0.1') {
-    return `http://${host}:8000/api`;
-  }
-
-  // Android emulator fallback when host IP isn't available.
-  if (Platform.OS === 'android' && !Constants.isDevice) {
-    return 'http://10.0.2.2:8000/api';
-  }
-
-  // Local simulator/web fallback.
-  return 'http://localhost:8000/api';
+  // Use the production backend IP for the deployed application.
+  return 'http://13.62.5.147:8000/api';
 };
 
 // API Configuration
