@@ -40,6 +40,7 @@ export interface Product {
   brand: string;
   category: string;
   price: number;
+  currentPrice?: number;
   imageUrl: string;
   description?: string;
   stock: number;
@@ -63,8 +64,8 @@ export interface CartItem {
   id?: string;
   product: Product;
   quantity: number;
-  unit_price?: number;
-  total_price?: number;
+  unitPrice?: number;
+  totalPrice?: number;
 }
 
 export interface Cart {

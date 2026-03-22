@@ -101,12 +101,15 @@ class Product(models.Model):
         """Return the current price with discount applied if there's an active promotion"""
         from django.utils import timezone
         from decimal import Decimal
+        from django.db.models import Q
         now = timezone.now()
-        active_promotion = self.promotions.filter(
+        active_promotion = Promotion.objects.filter(
             is_active=True,
             start_date__lte=now,
             end_date__gte=now
-        ).first()
+        ).filter(
+            Q(product=self) | Q(product__isnull=True)
+        ).order_by('-discount_percentage', '-start_date').first()
         
         if active_promotion and active_promotion.discount_percentage:
             price = Decimal(str(self.price))
